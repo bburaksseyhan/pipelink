@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using Pipelink.Behaviors;
 using Pipelink.Handlers;
@@ -6,8 +5,26 @@ using Pipelink.Interfaces;
 
 namespace Pipelink.Implementation;
 
+/// <summary>
+/// The Pipelink class provides a lightweight implementation for executing command-query responsibility segregation (CQRS)
+/// patterns within applications. It acts as a mediator to send requests and publish notifications by delegating tasks
+/// to their respective handlers and/or behaviors.
+/// </summary>
+/// <remarks>
+/// Pipelink utilizes the provided dependency injection container to dynamically resolve and invoke the appropriate
+/// request handlers, notification handlers, and pipeline behaviors at runtime. Handlers and behaviors should be registered
+/// before using the functionality provided by this class.
+/// </remarks>
 public class Pipelink(IServiceProvider serviceProvider)
 {
+    /// <summary>
+    /// Handles the dispatching of a request to the corresponding handler and pipeline behaviors,
+    /// and returns the response from the handler.
+    /// </summary>
+    /// <typeparam name="TResponse">The type of the response returned by the handler for the given request.</typeparam>
+    /// <param name="request">The request object implementing <see cref="IRequest{TResponse}"/> which needs to be handled.</param>
+    /// <param name="cancellationToken">Optional cancellation token to propagate notifications that the operation should be cancelled.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the response of type <typeparamref name="TResponse"/>.</returns>
     public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         var requestType = request.GetType();
@@ -30,7 +47,23 @@ public class Pipelink(IServiceProvider serviceProvider)
 
         return await handlerDelegate();
     }
-    
+
+    /// <summary>
+    /// Publishes a notification to all registered notification handlers asynchronously.
+    /// </summary>
+    /// <typeparam name="TNotification">
+    /// The type of notification being published. Must implement the <see cref="INotification"/> interface.
+    /// </typeparam>
+    /// <param name="notification">
+    /// The notification instance to be passed to the handlers.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A cancellation token that can be used to cancel the operation.
+    /// </param>
+    /// <returns>
+    /// A task that represents the asynchronous publish operation. Completion of this task indicates that all registered
+    /// handlers for the notification have completed their processing.
+    /// </returns>
     public async Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
         where TNotification : INotification
     {
@@ -38,10 +71,6 @@ public class Pipelink(IServiceProvider serviceProvider)
             .GetServices<INotificationHandler<TNotification>>()
             .ToList();
         
-        // foreach (var handler in handlers)
-        // {
-        //     await handler.Handle(notification, cancellationToken);
-        // }
         await Task.WhenAll(handlers.Select(h => h.Handle(notification, cancellationToken)));
     }
 }

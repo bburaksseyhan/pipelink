@@ -1,7 +1,6 @@
 using Pipelink.Behaviors;
 using Pipelink.Extensions;
 using Pipelink.Handlers;
-using Pipelink.Interfaces;
 using PipelinkTest.Api.CommandHandlers;
 using PipelinkTest.Api.Commands;
 using PipelinkTest.Api.Dtos;
@@ -26,7 +25,6 @@ builder.Services.AddTransient<INotificationHandler<UserCreatedNotification>, Sen
 var app = builder.Build();
 
 var mediator = app.Services.GetRequiredService<Pipelink.Implementation.Pipelink>();
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

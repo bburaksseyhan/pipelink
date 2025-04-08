@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Pipelink")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+70a829391caeedf26542ec76ef7d28bdfc6a6dea")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3a51951d53b4b0a254ce31699290c64d6a0059ec")]
 [assembly: System.Reflection.AssemblyProductAttribute("Pipelink")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Pipelink")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
