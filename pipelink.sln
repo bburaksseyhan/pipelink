@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pipelink", "Pipelink\Pipelink.csproj", "{92E0BC9A-9784-41F9-91BC-13328F3A020A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipelinkTest.Api", "PipelinkTest.Api\PipelinkTest.Api.csproj", "{C5279230-EC9E-4188-A11D-9C146EAF581F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{92E0BC9A-9784-41F9-91BC-13328F3A020A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92E0BC9A-9784-41F9-91BC-13328F3A020A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92E0BC9A-9784-41F9-91BC-13328F3A020A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92E0BC9A-9784-41F9-91BC-13328F3A020A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5279230-EC9E-4188-A11D-9C146EAF581F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5279230-EC9E-4188-A11D-9C146EAF581F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5279230-EC9E-4188-A11D-9C146EAF581F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5279230-EC9E-4188-A11D-9C146EAF581F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
