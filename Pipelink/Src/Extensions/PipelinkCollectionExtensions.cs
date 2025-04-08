@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pipelink.Behaviors;
 using Pipelink.Handlers;
+using System;
 
 namespace Pipelink.Extensions;
 
@@ -10,47 +11,45 @@ namespace Pipelink.Extensions;
 /// </summary>
 public static class PipelinkCollectionExtensions
 {
-    // Add the Mediator to DI container
     /// <summary>
     /// Registers the Pipelink implementation in the dependency injection container.
     /// </summary>
     /// <param name="services">The service collection to add the Pipelink service to.</param>
+    /// <param name="configureAction">Optional configuration action to configure Pipelink services.</param>
     /// <returns>The updated service collection with the Pipelink service registered.</returns>
-    public static IServiceCollection AddPipelink(this IServiceCollection services)
+    public static IServiceCollection AddPipelink(
+        this IServiceCollection services,
+        Action<PipelinkConfiguration>? configureAction = null)
     {
-        services.AddSingleton<Pipelink.Implementation.Pipelink>(); // Register Pipelink
+        // Register core Pipelink service
+        services.AddSingleton<Implementation.Pipelink>();
+
+        // Configure services if configuration action is provided
+        if (configureAction != null)
+        {
+            var configuration = new PipelinkConfiguration(services);
+            configureAction(configuration);
+            configuration.RegisterServices();
+        }
+        else
+        {
+            // If no configuration provided, register services from the entry assembly
+            var configuration = new PipelinkConfiguration(services);
+            configuration.RegisterServices();
+        }
+
         return services;
     }
 
-    // Add Request Handlers and Pipeline Behaviors to DI container
     /// <summary>
+    /// [Obsolete] Use AddPipelink with configuration instead.
     /// Registers all request handlers, notification handlers, and pipeline behaviors in the dependency injection container.
-    /// This method scans the assembly containing the Pipelink implementation and automatically registers
-    /// the components implementing respective interfaces for request handling, notification handling, and pipeline behaviors.
     /// </summary>
     /// <param name="services">An instance of <see cref="IServiceCollection"/> to which the handlers and behaviors will be added.</param>
     /// <returns>The updated <see cref="IServiceCollection"/> instance including the registered handlers and behaviors.</returns>
+    [Obsolete("Use AddPipelink with configuration instead. This method will be removed in a future version.")]
     public static IServiceCollection AddPipelinkHandlersAndBehaviors(this IServiceCollection services)
     {
-        // Register all handlers in the assembly automatically (example: registering all IRequestHandler implementations)
-        services.Scan(scan => scan
-            .FromAssemblyOf<Pipelink.Implementation.Pipelink>() // Automatically scan the assembly where your Mediator resides
-            .AddClasses(classes => classes.AssignableTo(typeof(IRequestHandler<,>)))
-            .AsImplementedInterfaces()
-            .WithTransientLifetime());
-
-        // Register all notification handlers (e.g., INotificationHandler<UserCreatedNotification>)
-        services.Scan(scan => scan
-            .FromAssemblyOf<Pipelink.Implementation.Pipelink>()
-            .AddClasses(classes => classes.AssignableTo(typeof(INotificationHandler<>)))
-            .AsImplementedInterfaces()
-            .WithTransientLifetime());
-        
-        // Register pipeline behaviors (example: logging, validation, caching)
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
-
-        return services;
+        return AddPipelink(services);
     }
 }

@@ -15,12 +15,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddPipelink();
-builder.Services.AddPipelinkHandlersAndBehaviors();
-builder.Services.AddTransient<IRequestHandler<GetUserQuery, UserDto>, GetUserQueryHandler>();
-builder.Services.AddTransient<IRequestHandler<LoginUserCommand, LoginUserDto>, LoginUserCommandHandler>();
-builder.Services.AddTransient<IPipelineBehavior<GetUserQuery, UserDto>, ValidationBehavior<GetUserQuery, UserDto>>();
-builder.Services.AddTransient<INotificationHandler<UserCreatedNotification>, SendWelcomeEmailHandler>();
+// Register Pipelink with automatic handler and behavior registration
+builder.Services.AddPipelink(cfg => 
+{
+    // Register handlers from the current assembly
+    cfg.RegisterServicesFromAssemblyContaining<Program>();
+});
 
 var app = builder.Build();
 
@@ -63,26 +63,4 @@ app.MapPost("/notify-user", async () =>
 }).WithName("NotifyUser")
 .WithOpenApi();
 
-app.MapGet("/weatherforecast", async () =>
-    {
-        var user = await mediator.Send(new GetUserQuery(1));
-        
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast")
-    .WithOpenApi();
-
 await app.RunAsync();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
