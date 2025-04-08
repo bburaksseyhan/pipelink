@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pipelink", "Pipelink\Pipeli
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipelinkTest.Api", "PipelinkTest.Api\PipelinkTest.Api.csproj", "{C5279230-EC9E-4188-A11D-9C146EAF581F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pipelink.Benchmarks", "Pipelink.Benchmarks\Pipelink.Benchmarks.csproj", "{252DB3D1-F76D-4740-A9AE-9CEE5F5DE38B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{C5279230-EC9E-4188-A11D-9C146EAF581F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C5279230-EC9E-4188-A11D-9C146EAF581F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C5279230-EC9E-4188-A11D-9C146EAF581F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{252DB3D1-F76D-4740-A9AE-9CEE5F5DE38B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{252DB3D1-F76D-4740-A9AE-9CEE5F5DE38B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{252DB3D1-F76D-4740-A9AE-9CEE5F5DE38B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{252DB3D1-F76D-4740-A9AE-9CEE5F5DE38B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
