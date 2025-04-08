@@ -22,11 +22,12 @@ Pipelink is designed with performance in mind. Here are some key benchmarks:
 
 | Operation | Mean Time | Allocated Memory |
 |-----------|-----------|------------------|
-| Send Request | ~1-2μs | ~200B |
-| Publish Notification | ~0.5-1μs | ~150B |
-| Send with Pipeline Behavior | ~2-3μs | ~300B |
+| Send Request | ~20-22μs | ~1.7KB |
+| Publish Notification | ~0.1μs | ~456B |
+| Send with Pipeline Behavior | ~20-21μs | ~1.7KB |
+| Send Stream Request (10 items) | ~1-2μs per item | ~200B per item |
 
-*Note: Benchmarks were run on .NET 8.0, Release configuration. Your results may vary depending on hardware and environment.*
+*Note: Benchmarks were run on .NET 8.0, Release configuration on an Apple M3 processor. Your results may vary depending on hardware and environment.*
 
 ## Installation
 

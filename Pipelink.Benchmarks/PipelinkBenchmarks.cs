@@ -12,6 +12,7 @@ public class PipelinkBenchmarks
     private Implementation.Pipelink _mediator = null!;
     private SimpleRequest _request = null!;
     private SimpleNotification _notification = null!;
+    private SimpleStreamRequest _streamRequest = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -26,6 +27,7 @@ public class PipelinkBenchmarks
         _mediator = serviceProvider.GetRequiredService<Implementation.Pipelink>();
         _request = new SimpleRequest(1);
         _notification = new SimpleNotification(1);
+        _streamRequest = new SimpleStreamRequest(10);
     }
 
     [Benchmark]
@@ -44,5 +46,14 @@ public class PipelinkBenchmarks
     public async Task Send_RequestWithBehavior()
     {
         await _mediator.Send(_request);
+    }
+
+    [Benchmark]
+    public async Task SendStream_SimpleRequest()
+    {
+        await foreach (var response in _mediator.SendStream<SimpleStreamRequest, SimpleStreamResponse>(_streamRequest))
+        {
+            // Consume the stream
+        }
     }
 } 

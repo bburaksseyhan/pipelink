@@ -1,12 +1,8 @@
-using Pipelink.Behaviors;
 using Pipelink.Extensions;
-using Pipelink.Handlers;
-using PipelinkTest.Api.CommandHandlers;
 using PipelinkTest.Api.Commands;
 using PipelinkTest.Api.Dtos;
 using PipelinkTest.Api.Notifications;
 using PipelinkTest.Api.Queries;
-using PipelinkTest.Api.QueryHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,11 +31,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
 app.MapGet("/user", async () =>
 {
     var user = await mediator.Send(new GetUserQuery(1));
@@ -61,6 +52,13 @@ app.MapPost("/notify-user", async () =>
     await mediator.Publish(new UserCreatedNotification { UserId = 123 });
     return Results.Ok("Notification sent");
 }).WithName("NotifyUser")
+.WithOpenApi();
+
+app.MapGet("/stream-users", async (int count = 10) =>
+{
+    var users = mediator.SendStream<StreamUserQuery, UserDto>(new StreamUserQuery(count));
+    return users;
+}).WithName("StreamUsers")
 .WithOpenApi();
 
 await app.RunAsync();

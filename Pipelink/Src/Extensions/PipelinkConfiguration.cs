@@ -1,5 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Pipelink.Behaviors;
+using Pipelink.Handlers;
 
 namespace Pipelink.Extensions;
 
@@ -63,21 +65,28 @@ public class PipelinkConfiguration
             // Register request handlers
             _services.Scan(scan => scan
                 .FromAssemblies(assembly)
-                .AddClasses(classes => classes.AssignableTo(typeof(Handlers.IRequestHandler<,>)))
+                .AddClasses(classes => classes.AssignableTo(typeof(IRequestHandler<,>)))
+                .AsImplementedInterfaces()
+                .WithTransientLifetime());
+
+            // Register stream request handlers
+            _services.Scan(scan => scan
+                .FromAssemblies(assembly)
+                .AddClasses(classes => classes.AssignableTo(typeof(IStreamRequestHandler<,>)))
                 .AsImplementedInterfaces()
                 .WithTransientLifetime());
 
             // Register notification handlers
             _services.Scan(scan => scan
                 .FromAssemblies(assembly)
-                .AddClasses(classes => classes.AssignableTo(typeof(Handlers.INotificationHandler<>)))
+                .AddClasses(classes => classes.AssignableTo(typeof(INotificationHandler<>)))
                 .AsImplementedInterfaces()
                 .WithTransientLifetime());
         }
 
         // Register core pipeline behaviors
-        _services.AddTransient(typeof(Behaviors.IPipelineBehavior<,>), typeof(Behaviors.LoggingBehavior<,>));
-        _services.AddTransient(typeof(Behaviors.IPipelineBehavior<,>), typeof(Behaviors.ValidationBehavior<,>));
-        _services.AddTransient(typeof(Behaviors.IPipelineBehavior<,>), typeof(Behaviors.CachingBehavior<,>));
+        _services.AddTransient(typeof(IPipelineBehavior<,>), typeof(Behaviors.LoggingBehavior<,>));
+        _services.AddTransient(typeof(IPipelineBehavior<,>), typeof(Behaviors.ValidationBehavior<,>));
+        _services.AddTransient(typeof(IPipelineBehavior<,>), typeof(Behaviors.CachingBehavior<,>));
     }
 } 
