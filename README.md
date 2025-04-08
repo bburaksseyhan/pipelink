@@ -69,22 +69,22 @@ public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserDto>
 }
 ```
 
-### 4. Use the mediator in your application
+### 4. Use Pipelink in your application
 
 ```csharp
 public class UserController : ControllerBase
 {
-    private readonly Pipelink _mediator;
+    private readonly Pipelink _pipelink;
 
-    public UserController(Pipelink mediator)
+    public UserController(Pipelink pipelink)
     {
-        _mediator = mediator;
+        _pipelink = pipelink;
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<UserDto>> GetUser(int id)
     {
-        var user = await _mediator.Send(new GetUserQuery(id));
+        var user = await _pipelink.Send(new GetUserQuery(id));
         return Ok(user);
     }
 }
@@ -116,7 +116,7 @@ public class UpdateUserCacheHandler : INotificationHandler<UserCreatedNotificati
 }
 
 // Publish a notification
-await _mediator.Publish(new UserCreatedNotification(userId, email));
+await _pipelink.Publish(new UserCreatedNotification(userId, email));
 ```
 
 ### Pipeline Behaviors
