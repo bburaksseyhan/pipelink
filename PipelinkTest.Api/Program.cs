@@ -20,7 +20,7 @@ builder.Services.AddPipelink(cfg =>
 
 var app = builder.Build();
 
-var mediator = app.Services.GetRequiredService<Pipelink.Implementation.Pipelink>();
+var pipelink = app.Services.GetRequiredService<Pipelink.Implementation.Pipelink>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -33,7 +33,7 @@ app.UseHttpsRedirection();
 
 app.MapGet("/user", async () =>
 {
-    var user = await mediator.Send(new GetUserQuery(1));
+    var user = await pipelink.Send(new GetUserQuery(1));
 
     return user;
 }).WithName("GetUserById")
@@ -41,7 +41,7 @@ app.MapGet("/user", async () =>
 
 app.MapGet("/login", async () => 
     {
-        var loginUser = await mediator.Send(new LoginUserCommand("burak.seyhan@commencis.com"));
+        var loginUser = await pipelink.Send(new LoginUserCommand("burak.seyhan@commencis.com"));
 
         return loginUser;
     }).WithName("LoginUser")
@@ -49,14 +49,14 @@ app.MapGet("/login", async () =>
 
 app.MapPost("/notify-user", async () =>
 {
-    await mediator.Publish(new UserCreatedNotification { UserId = 123 });
+    await pipelink.Publish(new UserCreatedNotification { UserId = 123 });
     return Results.Ok("Notification sent");
 }).WithName("NotifyUser")
 .WithOpenApi();
 
 app.MapGet("/stream-users", async (int count = 10) =>
 {
-    var users = mediator.SendStream<StreamUserQuery, UserDto>(new StreamUserQuery(count));
+    var users = pipelink.SendStream<StreamUserQuery, UserDto>(new StreamUserQuery(count));
     return users;
 }).WithName("StreamUsers")
 .WithOpenApi();

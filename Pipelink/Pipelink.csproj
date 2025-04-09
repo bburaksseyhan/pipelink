@@ -4,6 +4,18 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PackageId>Pipelink</PackageId>
+        <Version>1.0.2</Version>
+        <Authors>Seyhan B.</Authors>
+        <Company>Seyhan B.</Company>
+        <Description>A lightweight implementation for executing command-query responsibility segregation (CQRS) patterns within applications. It acts as a mediator to send requests and publish notifications by delegating tasks to their respective handlers and/or behaviors.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/seyhanb/pipelink</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/seyhanb/pipelink</RepositoryUrl>
+        <PackageTags>CQRS Mediator Command Query Request Response Notification Stream</PackageTags>
+        <PackageIcon>pipelink-icon-optimized.png</PackageIcon>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     </PropertyGroup>
 
     <ItemGroup>
@@ -13,7 +25,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Src\" />
+      <Folder Include="Src/" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="pipelink-icon-optimized.png" Pack="true" PackagePath="/" />
+      <None Include="README.md" Pack="true" PackagePath="/" />
     </ItemGroup>
 
 </Project>

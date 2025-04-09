@@ -9,7 +9,7 @@
       "PipelinkTest.Api/1.0.0": {
         "dependencies": {
           "Microsoft.AspNetCore.OpenApi": "8.0.11",
-          "Pipelink": "1.0.0",
+          "Pipelink": "1.0.2",
           "Swashbuckle.AspNetCore": "6.6.2"
         },
         "runtime": {
@@ -121,7 +121,7 @@
           }
         }
       },
-      "Pipelink/1.0.0": {
+      "Pipelink/1.0.2": {
         "dependencies": {
           "FluentValidation": "11.11.0",
           "Microsoft.Extensions.DependencyInjection": "9.0.3",
@@ -129,8 +129,8 @@
         },
         "runtime": {
           "Pipelink.dll": {
-            "assemblyVersion": "1.0.0",
-            "fileVersion": "1.0.0.0"
+            "assemblyVersion": "1.0.2",
+            "fileVersion": "1.0.2.0"
           }
         }
       }
@@ -226,7 +226,7 @@
       "path": "swashbuckle.aspnetcore.swaggerui/6.6.2",
       "hashPath": "swashbuckle.aspnetcore.swaggerui.6.6.2.nupkg.sha512"
     },
-    "Pipelink/1.0.0": {
+    "Pipelink/1.0.2": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

@@ -3,7 +3,17 @@
 [![NuGet](https://img.shields.io/nuget/v/Pipelink.svg)](https://www.nuget.org/packages/Pipelink)
 [![License](https://img.shields.io/github/license/seyhanb/pipelink.svg)](LICENSE)
 
-Pipelink is a lightweight, high-performance mediator pattern implementation for .NET applications, inspired by MediatR. It provides a simple way to implement the mediator pattern in your applications, allowing for clean separation of concerns and better maintainability.
+A lightweight implementation for executing command-query responsibility segregation (CQRS) patterns within applications. It acts as a mediator to send requests and publish notifications by delegating tasks to their respective handlers and/or behaviors.
+
+## Inspiration
+
+Pipelink is inspired by [MediatR](https://github.com/jbogard/MediatR), a popular .NET library implementing the mediator pattern. While sharing similar core concepts with MediatR, Pipelink offers:
+
+- **Lightweight Implementation**: A streamlined approach focusing on essential CQRS functionality
+- **Modern .NET Features**: Built specifically for .NET 8.0, leveraging the latest framework capabilities
+- **Built-in Streaming**: Native support for streaming operations, ideal for handling large datasets
+- **Simplified Pipeline**: Straightforward behavior pipeline for cross-cutting concerns
+- **Modern Dependency Injection**: Seamless integration with Microsoft's DI container
 
 ## Features
 
@@ -15,6 +25,8 @@ Pipelink is a lightweight, high-performance mediator pattern implementation for 
 - **Async Support**: Full support for asynchronous operations
 - **Type Safety**: Strongly typed requests, responses, and notifications
 - **High Performance**: Optimized for minimal overhead and memory usage
+- **Stream Requests**: Native support for streaming operations
+- **Compression Support**: Built-in support for data compression
 
 ## Performance
 
