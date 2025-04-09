@@ -1,8 +1,10 @@
 using Pipelink.Extensions;
 using PipelinkTest.Api.Commands;
+using PipelinkTest.Api.CommandHandlers;
 using PipelinkTest.Api.Dtos;
 using PipelinkTest.Api.Notifications;
 using PipelinkTest.Api.Queries;
+using PipelinkTest.Api.QueryHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 

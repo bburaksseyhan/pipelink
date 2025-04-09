@@ -34,14 +34,18 @@ public class Pipelink
     /// <returns>A task that represents the asynchronous operation. The task result contains the response of type <typeparamref name="TResponse"/>.</returns>
     public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        var handler = _serviceProvider.GetRequiredService<IRequestHandler<IRequest<TResponse>, TResponse>>();
-        var behaviors = _serviceProvider.GetServices<IPipelineBehavior<IRequest<TResponse>, TResponse>>().ToList();
+        var requestType = request.GetType();
+        var handlerType = typeof(IRequestHandler<,>).MakeGenericType(requestType, typeof(TResponse));
+        var handler = (dynamic)_serviceProvider.GetRequiredService(handlerType);
+        
+        var behaviorType = typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse));
+        var behaviors = _serviceProvider.GetServices(behaviorType).ToList();
 
-        async Task<TResponse> Handler() => await handler.Handle(request, cancellationToken);
+        async Task<TResponse> Handler() => await handler.Handle((dynamic)request, cancellationToken);
 
         var pipeline = behaviors.Aggregate(
             (RequestHandlerDelegate<TResponse>)Handler,
-            (next, pipeline) => () => pipeline.Handle(request, cancellationToken, next));
+            (next, pipeline) => () => ((dynamic)pipeline).Handle((dynamic)request, cancellationToken, next));
 
         return await pipeline();
     }
