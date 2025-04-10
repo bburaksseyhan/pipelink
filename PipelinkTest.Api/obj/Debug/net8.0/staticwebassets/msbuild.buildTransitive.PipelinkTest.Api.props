@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../buildMultiTargeting/PipelinkTest.Api.props" />
-</Project>

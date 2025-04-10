@@ -234,7 +234,7 @@
     "/Users/seyhanb/.nuget/packages/": {}
   },
   "project": {
-    "version": "1.0.3",
+    "version": "1.0.7",
     "restore": {
       "projectUniqueName": "/Users/seyhanb/Documents/GitHub/pipelink/Pipelink/Pipelink.csproj",
       "projectName": "Pipelink",

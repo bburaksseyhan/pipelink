@@ -189,7 +189,7 @@
           "Microsoft.AspNetCore.App"
         ]
       },
-      "Pipelink/1.0.2": {
+      "Pipelink/1.0.3": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
@@ -706,7 +706,7 @@
         "swashbuckle.aspnetcore.swaggerui.nuspec"
       ]
     },
-    "Pipelink/1.0.2": {
+    "Pipelink/1.0.3": {
       "type": "project",
       "path": "../Pipelink/Pipelink.csproj",
       "msbuildProject": "../Pipelink/Pipelink.csproj"
@@ -715,7 +715,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "Microsoft.AspNetCore.OpenApi >= 8.0.11",
-      "Pipelink >= 1.0.2",
+      "Pipelink >= 1.0.3",
       "Swashbuckle.AspNetCore >= 6.6.2"
     ]
   },

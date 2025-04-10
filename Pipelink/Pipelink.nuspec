@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Pipelink</id>
+    <version>1.0.7</version>
+    <authors>seyhanb</authors>
+    <owners>seyhanb</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/seyhanb/pipelink</projectUrl>
+    <description>A .NET library for creating and managing pipeline links.</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright 2024</copyright>
+    <tags>pipeline link management</tags>
+    <icon>pipelink-icon-optimized.png</icon>
+  </metadata>
+  <files>
+    <file src="bin\Release\net8.0\Pipelink.dll" target="lib\net8.0" />
+    <file src="pipelink-icon-optimized.png" target="" />
+  </files>
+</package> 
