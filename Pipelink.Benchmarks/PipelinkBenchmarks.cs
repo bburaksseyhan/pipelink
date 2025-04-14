@@ -51,9 +51,9 @@ public class PipelinkBenchmarks
     [Benchmark]
     public async Task SendStream_SimpleRequest()
     {
-        await foreach (var response1 in _pipelink.SendStream<SimpleStreamRequest, SimpleStreamResponse>(_streamRequest))
-        await foreach (var response2 in _pipelink.SendStream<SimpleStreamRequest, SimpleStreamResponse>(_streamRequest))
-        await foreach (var response3 in _pipelink.SendStream<SimpleStreamRequest, SimpleStreamResponse>(_streamRequest))
+        await foreach (var response1 in _pipelink.SendStream<SimpleStreamResponse>(_streamRequest))
+        await foreach (var response2 in _pipelink.SendStream<SimpleStreamResponse>(_streamRequest))
+        await foreach (var response3 in _pipelink.SendStream<SimpleStreamResponse>(_streamRequest))
         {
             // Consume the stream
         }

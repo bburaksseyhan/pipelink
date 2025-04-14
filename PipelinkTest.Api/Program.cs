@@ -5,6 +5,7 @@ using PipelinkTest.Api.Dtos;
 using PipelinkTest.Api.Notifications;
 using PipelinkTest.Api.Queries;
 using PipelinkTest.Api.QueryHandlers;
+using PipelinkTest.Api.Stream;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,33 +34,31 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/user", async () =>
+app.MapGet("/user/{id}", async (int id) =>
 {
-    var user = await pipelink.Send(new GetUserQuery(1));
-
-    return user;
+    var user = await pipelink.Send(new GetUserQuery(id));
+    return Results.Ok(user);
 }).WithName("GetUserById")
 .WithOpenApi();
 
-app.MapGet("/login", async () => 
-    {
-        var loginUser = await pipelink.Send(new LoginUserCommand("burak.seyhan@commencis.com"));
-
-        return loginUser;
-    }).WithName("LoginUser")
-    .WithOpenApi();
-
-app.MapPost("/notify-user", async () =>
+app.MapPost("/login", async (LoginUserCommand command) => 
 {
-    await pipelink.Publish(new UserCreatedNotification { UserId = 123 });
+    var loginUser = await pipelink.Send(command);
+    return Results.Ok(loginUser);
+}).WithName("LoginUser")
+.WithOpenApi();
+
+app.MapPost("/notify-user", async (UserCreatedNotification notification) =>
+{
+    await pipelink.Publish(notification);
     return Results.Ok("Notification sent");
 }).WithName("NotifyUser")
 .WithOpenApi();
 
 app.MapGet("/stream-users", async (int count = 10) =>
 {
-    var users = pipelink.SendStream<StreamUserQuery, UserDto>(new StreamUserQuery(count));
-    return users;
+    var users = pipelink.SendStream(new StreamUserQuery(count));
+    return Results.Ok(users);
 }).WithName("StreamUsers")
 .WithOpenApi();
 

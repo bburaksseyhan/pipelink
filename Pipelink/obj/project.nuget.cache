@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "ofg6LVqX/mc=",
+  "dgSpecHash": "027zKd8OQ3I=",
   "success": true,
   "projectFilePath": "/Users/seyhanb/Documents/GitHub/pipelink/Pipelink/Pipelink.csproj",
   "expectedPackageFiles": [
@@ -8,6 +8,7 @@
     "/Users/seyhanb/.nuget/packages/microsoft.extensions.dependencyinjection/9.0.3/microsoft.extensions.dependencyinjection.9.0.3.nupkg.sha512",
     "/Users/seyhanb/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/9.0.3/microsoft.extensions.dependencyinjection.abstractions.9.0.3.nupkg.sha512",
     "/Users/seyhanb/.nuget/packages/microsoft.extensions.dependencymodel/8.0.2/microsoft.extensions.dependencymodel.8.0.2.nupkg.sha512",
+    "/Users/seyhanb/.nuget/packages/microsoft.extensions.objectpool/8.0.0/microsoft.extensions.objectpool.8.0.0.nupkg.sha512",
     "/Users/seyhanb/.nuget/packages/scrutor/6.0.1/scrutor.6.0.1.nupkg.sha512"
   ],
   "logs": []

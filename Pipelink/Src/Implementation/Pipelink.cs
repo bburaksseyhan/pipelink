@@ -1,7 +1,17 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.ObjectPool;
 using Pipelink.Behaviors;
 using Pipelink.Handlers;
 using Pipelink.Interfaces;
+using System.Collections.Concurrent;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Buffers;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Pipelink.Implementation;
 
@@ -15,13 +25,18 @@ namespace Pipelink.Implementation;
 /// request handlers, notification handlers, and pipeline behaviors at runtime. Handlers and behaviors should be registered
 /// before using the functionality provided by this class.
 /// </remarks>
-public class Pipelink
+public sealed class Pipelink : IPipelink
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly ConcurrentDictionary<Type, Delegate> _handlerCache = new();
+    private readonly ConcurrentDictionary<Type, object[]> _behaviorCache = new();
+    private readonly ObjectPool<RequestContext> _requestContextPool;
 
     public Pipelink(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
+        var policy = new RequestContextPooledObjectPolicy();
+        _requestContextPool = new DefaultObjectPool<RequestContext>(policy);
     }
 
     /// <summary>
@@ -35,34 +50,65 @@ public class Pipelink
     public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         var requestType = request.GetType();
-        var handlerType = typeof(IRequestHandler<,>).MakeGenericType(requestType, typeof(TResponse));
-        var handler = (dynamic)_serviceProvider.GetRequiredService(handlerType);
-        
-        var behaviorType = typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse));
-        var behaviors = _serviceProvider.GetServices(behaviorType).ToList();
+        var handlerDelegate = GetOrCreateHandlerDelegate<TResponse>(requestType);
 
-        async Task<TResponse> Handler() => await handler.Handle((dynamic)request, cancellationToken);
+        return await ((Func<object, CancellationToken, Task<TResponse>>)handlerDelegate)(
+            request,
+            cancellationToken
+        );
+    }
 
-        var pipeline = behaviors.Aggregate(
-            (RequestHandlerDelegate<TResponse>)Handler,
-            (next, pipeline) => () => ((dynamic)pipeline).Handle((dynamic)request, cancellationToken, next));
+    private Delegate CreateHandlerDelegate<TResponse>(Type requestType)
+    {
+        var handler = _serviceProvider.GetRequiredService(typeof(IRequestHandler<,>).MakeGenericType(requestType, typeof(TResponse)));
+        var handleMethod = handler.GetType().GetMethod("Handle") ?? throw new InvalidOperationException($"Handler for {requestType} does not implement Handle method");
 
-        return await pipeline();
+        var requestParam = Expression.Parameter(typeof(object), "request");
+        var tokenParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
+
+        var handlerConst = Expression.Constant(handler);
+        var requestCast = Expression.Convert(requestParam, requestType);
+
+        var call = Expression.Call(handlerConst, handleMethod, requestCast, tokenParam);
+        var lambda = Expression.Lambda<Func<object, CancellationToken, Task<TResponse>>>(call, requestParam, tokenParam);
+
+        return lambda.Compile();
+    }
+
+    private Delegate GetOrCreateHandlerDelegate<TResponse>(Type requestType)
+    {
+        return _handlerCache.GetOrAdd(requestType, t => CreateHandlerDelegate<TResponse>(t));
     }
 
     /// <summary>
     /// Sends a streaming request and returns a stream of responses.
     /// </summary>
-    /// <typeparam name="TRequest">The type of the request.</typeparam>
-    /// <typeparam name="TResponse">The type of the response.</typeparam>
+    /// <typeparam name="TResponse">The type of the responses in the stream.</typeparam>
     /// <param name="request">The streaming request to send.</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>An asynchronous enumerable of responses.</returns>
-    public IAsyncEnumerable<TResponse> SendStream<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
-        where TRequest : IStreamRequest<TResponse>
+    public async IAsyncEnumerable<TResponse> SendStream<TResponse>(IStreamRequest<TResponse> request, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var handler = _serviceProvider.GetRequiredService<IStreamRequestHandler<TRequest, TResponse>>();
-        return handler.Handle(request, cancellationToken);
+        var requestType = request.GetType();
+        var handler = (Func<object, CancellationToken, IAsyncEnumerable<TResponse>>)_handlerCache.GetOrAdd(requestType, type =>
+        {
+            var handlerType = typeof(IStreamRequestHandler<,>).MakeGenericType(type, typeof(TResponse));
+            var handlerInstance = _serviceProvider.GetService(handlerType) ?? throw new InvalidOperationException($"No handler found for request type {type.Name}");
+            var handleMethod = handlerType.GetMethod("Handle") ?? throw new InvalidOperationException("Handle method not found");
+
+            var requestParam = Expression.Parameter(typeof(object), "request");
+            var cancellationTokenParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
+            var handlerConstant = Expression.Constant(handlerInstance);
+            var requestConverted = Expression.Convert(requestParam, type);
+
+            var methodCall = Expression.Call(handlerConstant, handleMethod, requestConverted, cancellationTokenParam);
+            return Expression.Lambda<Func<object, CancellationToken, IAsyncEnumerable<TResponse>>>(methodCall, requestParam, cancellationTokenParam).Compile();
+        });
+
+        await foreach (var response in handler(request, cancellationToken))
+        {
+            yield return response;
+        }
     }
 
     /// <summary>
@@ -85,12 +131,35 @@ public class Pipelink
         where TNotification : INotification
     {
         var handlerType = typeof(INotificationHandler<>).MakeGenericType(notification.GetType());
-        var handlers = _serviceProvider.GetServices(handlerType);
+        var handlers = _serviceProvider.GetServices(handlerType).ToArray();
 
         foreach (var handler in handlers)
         {
             var method = handlerType.GetMethod("Handle");
-            await (Task)method!.Invoke(handler, new object[] { notification, cancellationToken })!;
+            if (method != null)
+            {
+                await ((Task)method.Invoke(handler, new object[] { notification, cancellationToken })!);
+            }
         }
+    }
+}
+
+internal sealed class RequestContext : IRequestContext
+{
+    public object Request { get; set; } = default!;
+    public IServiceProvider ServiceProvider { get; set; } = default!;
+    public CancellationToken CancellationToken { get; set; }
+}
+
+internal sealed class RequestContextPooledObjectPolicy : IPooledObjectPolicy<RequestContext>
+{
+    public RequestContext Create() => new();
+
+    public bool Return(RequestContext obj)
+    {
+        obj.Request = default!;
+        obj.ServiceProvider = default!;
+        obj.CancellationToken = default;
+        return true;
     }
 }

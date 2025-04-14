@@ -5,7 +5,7 @@
   },
   "projects": {
     "/Users/seyhanb/Documents/GitHub/pipelink/Pipelink/Pipelink.csproj": {
-      "version": "1.0.3",
+      "version": "1.0.7",
       "restore": {
         "projectUniqueName": "/Users/seyhanb/Documents/GitHub/pipelink/Pipelink/Pipelink.csproj",
         "projectName": "Pipelink",
@@ -50,6 +50,10 @@
             "Microsoft.Extensions.DependencyInjection": {
               "target": "Package",
               "version": "[9.0.3, )"
+            },
+            "Microsoft.Extensions.ObjectPool": {
+              "target": "Package",
+              "version": "[8.0.0, )"
             },
             "Scrutor": {
               "target": "Package",
