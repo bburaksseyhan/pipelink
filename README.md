@@ -30,16 +30,19 @@ Pipelink is inspired by [MediatR](https://github.com/jbogard/MediatR), a popular
 
 ## Performance
 
-Pipelink is designed with performance in mind. Here are some key benchmarks:
+Pipelink is designed with performance in mind. Here are the latest benchmark results comparing Pipelink with MediatR:
 
-| Operation | Mean Time | Allocated Memory |
-|-----------|-----------|------------------|
-| Send Request | ~20-22μs | ~1.7KB |
-| Publish Notification | ~0.1μs | ~456B |
-| Send with Pipeline Behavior | ~20-21μs | ~1.7KB |
-| Send Stream Request (10 items) | ~1-2μs per item | ~200B per item |
+| Method        | Mean     | Error    | StdDev   | Allocated | 
+|--------------|----------|----------|----------|-----------|
+| MediatR_Send | 83.13 ns | 0.333 ns | 0.642 ns | 384 B    |
+| Pipelink_Send| 39.10 ns | 0.179 ns | 0.340 ns | 280 B    |
 
-*Note: Benchmarks were run on .NET 8.0, Release configuration on an Apple M3 processor. Your results may vary depending on hardware and environment.*
+Key Performance Improvements:
+- **53% Faster**: Pipelink is more than twice as fast as MediatR
+- **27% Less Memory**: Pipelink allocates significantly less memory per operation
+- **More Stable**: Lower standard deviation indicates more consistent performance
+
+*Note: Benchmarks were run on .NET 8.0, Release configuration on an Apple M3 processor using BenchmarkDotNet v0.14.0. Your results may vary depending on hardware and environment.*
 
 ## Installation
 
