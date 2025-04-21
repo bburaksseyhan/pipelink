@@ -10,6 +10,7 @@ public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserDto>
     {
         // Simulate data fetching
         await Task.Delay(100); 
+        
         return new UserDto { Id = request.UserId, Name = "John Doe" };
     }
 }

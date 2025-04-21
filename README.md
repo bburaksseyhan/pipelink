@@ -162,79 +162,116 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
 }
 ```
 
-### Validation Behavior
+### Metrics Collection
 
+Pipelink includes built-in support for collecting and monitoring request metrics. This feature helps you track performance, resource usage, and errors across your application.
+
+#### Setting up Metrics Collection
+
+1. Register the metrics collector:
 ```csharp
-public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
-{
-    private readonly IEnumerable<IValidator<TRequest>> _validators;
-
-    public ValidationBehavior(IEnumerable<IValidator<TRequest>> validators)
-    {
-        _validators = validators;
-    }
-
-    public async Task<TResponse> Handle(
-        TRequest request,
-        CancellationToken cancellationToken,
-        RequestHandlerDelegate<TResponse> next)
-    {
-        var context = new ValidationContext<TRequest>(request);
-        var failures = _validators
-            .Select(v => v.Validate(context))
-            .SelectMany(result => result.Errors)
-            .Where(f => f != null)
-            .ToList();
-
-        if (failures.Count != 0)
-        {
-            throw new ValidationException(failures);
-        }
-
-        return await next();
-    }
-}
+// In Program.cs or Startup.cs
+builder.Services.AddSingleton<IMetricsCollector, InMemoryMetricsCollector>();
 ```
 
-## Configuration
-
-Pipelink can be configured using the `PipelinkConfiguration` class:
-
+2. Add the metrics middleware:
 ```csharp
-services.AddPipelink(cfg => 
+// Add metrics collection middleware
+app.Use(async (context, next) =>
 {
-    // Register from multiple assemblies
-    cfg.RegisterServicesFromAssemblyContaining<Startup>()
-       .RegisterServicesFromAssembly(typeof(SomeOtherClass).Assembly);
+    var startTime = DateTime.UtcNow;
+    var startCpu = Process.GetCurrentProcess().TotalProcessorTime;
+    var startMemory = Process.GetCurrentProcess().WorkingSet64;
+
+    try
+    {
+        await next();
+    }
+    finally
+    {
+        var endTime = DateTime.UtcNow;
+        var endCpu = Process.GetCurrentProcess().TotalProcessorTime;
+        var endMemory = Process.GetCurrentProcess().WorkingSet64;
+
+        var metrics = new MetricsData
+        {
+            RequestType = context.Request.Path,
+            StartTime = startTime,
+            EndTime = endTime,
+            DurationMs = (endTime - startTime).TotalMilliseconds,
+            CpuUsage = (endCpu - startCpu).TotalMilliseconds,
+            MemoryUsage = endMemory - startMemory,
+            HasError = context.Response.StatusCode >= 400
+        };
+
+        await metricsCollector.RecordMetricsAsync(metrics);
+    }
 });
 ```
 
-## Best Practices
+3. Add the metrics endpoint:
+```csharp
+app.MapGet("/metrics", async (IMetricsCollector metricsCollector, 
+    [FromQuery] DateTime? startTime = null,
+    [FromQuery] DateTime? endTime = null,
+    [FromQuery] string? requestType = null) =>
+{
+    var metrics = await metricsCollector.GetMetricsAsync(startTime, endTime, requestType);
+    return Results.Ok(metrics);
+});
+```
 
-1. **Keep Handlers Focused**: Each handler should have a single responsibility
-2. **Use Records for Requests**: Records are immutable and perfect for request/response objects
-3. **Implement Validation**: Use pipeline behaviors for request validation
-4. **Handle Errors**: Implement error handling behaviors
-5. **Use Cancellation Tokens**: Always pass cancellation tokens through your handlers
-6. **Log Important Events**: Use logging behaviors for important operations
+#### Available Metrics
 
-## Contributing
+The metrics collector captures the following information for each request:
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+- **Request Type**: The path of the request (e.g., `/user/1`, `/login`)
+- **Timing**:
+  - Start Time (UTC)
+  - End Time (UTC)
+  - Duration (milliseconds)
+- **Resource Usage**:
+  - CPU Usage (milliseconds)
+  - CPU Percentage (%)
+  - Average CPU Usage (ms/request)
+  - Memory Usage (bytes)
+  - Memory Percentage (%)
+  - Peak Memory Usage (bytes)
+- **Error Tracking**:
+  - Has Error flag
+  - Error Message (if applicable)
 
-### Development Setup
+#### Querying Metrics
 
-1. Clone the repository
-2. Install .NET 8.0 SDK
-3. Run tests: `dotnet test`
-4. Run benchmarks: `dotnet run -c Release --project Pipelink.Benchmarks`
+You can retrieve metrics with optional filtering:
 
-## License
+```http
+GET /metrics                                    # All metrics
+GET /metrics?requestType=/user/1                # Metrics for specific endpoint
+GET /metrics?startTime=2024-04-21T09:00:00Z    # Metrics after start time
+GET /metrics?endTime=2024-04-21T10:00:00Z      # Metrics before end time
+```
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Example response:
+```json
+[
+    {
+        "requestType": "/user/1",
+        "startTime": "2024-04-21T09:30:42Z",
+        "endTime": "2024-04-21T09:30:42Z",
+        "durationMs": 109.32,
+        "cpuUsage": 8.44,
+        "memoryUsage": 950272,
+        "hasError": false,
+        "errorMessage": null,
+        "cpuPercentage": 7.72,
+        "memoryPercentage": 0.45,
+        "peakMemoryUsage": 1024000,
+        "averageCpuUsage": 0.077
+    }
+]
+```
 
-## Acknowledgments
+### Validation Behavior
 
-- Inspired by [MediatR](https://github.com/jbogard/MediatR)
-- Built with ❤️ for the .NET community
+```

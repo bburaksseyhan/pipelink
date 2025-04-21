@@ -1,10 +1,13 @@
 ﻿using BenchmarkDotNet.Running;
-using Pipelink.Benchmarks;
 
-class Program
+namespace Pipelink.Benchmarks
 {
-    static void Main(string[] args)
+    public class Program
     {
-        var summary = BenchmarkRunner.Run<MediatorBenchmarks>();
+        public static void Main(string[] args)
+        {
+            var switcher = BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly);
+            switcher.Run(args);
+        }
     }
 }
