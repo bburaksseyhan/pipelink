@@ -177,49 +177,49 @@ builder.Services.AddSingleton<IMetricsCollector, InMemoryMetricsCollector>();
 2. Add the metrics middleware:
 ```csharp
 // Add metrics collection middleware
-app.Use(async (context, next) =>
-{
-    var startTime = DateTime.UtcNow;
-    var startCpu = Process.GetCurrentProcess().TotalProcessorTime;
-    var startMemory = Process.GetCurrentProcess().WorkingSet64;
-
-    try
-    {
-        await next();
-    }
-    finally
-    {
-        var endTime = DateTime.UtcNow;
-        var endCpu = Process.GetCurrentProcess().TotalProcessorTime;
-        var endMemory = Process.GetCurrentProcess().WorkingSet64;
-
-        var metrics = new MetricsData
-        {
-            RequestType = context.Request.Path,
-            StartTime = startTime,
-            EndTime = endTime,
-            DurationMs = (endTime - startTime).TotalMilliseconds,
-            CpuUsage = (endCpu - startCpu).TotalMilliseconds,
-            MemoryUsage = endMemory - startMemory,
-            HasError = context.Response.StatusCode >= 400
-        };
-
-        await metricsCollector.RecordMetricsAsync(metrics);
-    }
-});
+app.UseMetrics();
 ```
 
-3. Add the metrics endpoint:
-```csharp
-app.MapGet("/metrics", async (IMetricsCollector metricsCollector, 
-    [FromQuery] DateTime? startTime = null,
-    [FromQuery] DateTime? endTime = null,
-    [FromQuery] string? requestType = null) =>
-{
-    var metrics = await metricsCollector.GetMetricsAsync(startTime, endTime, requestType);
-    return Results.Ok(metrics);
-});
-```
+#### Available Metrics Endpoints
+
+The API provides several endpoints for accessing and visualizing metrics:
+
+1. **Get Metrics** - `GET /metrics`
+   - Returns raw metrics data
+   - Supports filtering by time range and request type
+   ```http
+   GET /metrics
+   GET /metrics?startTime=2024-04-21T09:00:00Z
+   GET /metrics?endTime=2024-04-21T10:00:00Z
+   GET /metrics?requestType=/user/1
+   ```
+
+2. **Export as CSV** - `GET /metrics/export/csv`
+   - Exports metrics data in CSV format
+   - Easy to import into Excel or other analysis tools
+   ```http
+   GET /metrics/export/csv
+   ```
+
+3. **HTML Visualization** - `GET /metrics/visualize`
+   - Provides a clean, formatted HTML table view
+   - Includes summary statistics and detailed metrics
+   ```http
+   GET /metrics/visualize
+   ```
+
+4. **Pretty Print JSON** - `GET /metrics/pretty`
+   - Returns formatted JSON with human-readable timestamps
+   - Rounded numerical values for better readability
+   ```http
+   GET /metrics/pretty
+   ```
+
+5. **Clear Metrics** - `DELETE /metrics`
+   - Clears all collected metrics data
+   ```http
+   DELETE /metrics
+   ```
 
 #### Available Metrics
 
@@ -241,36 +241,68 @@ The metrics collector captures the following information for each request:
   - Has Error flag
   - Error Message (if applicable)
 
-#### Querying Metrics
+#### Example Metrics Response
 
-You can retrieve metrics with optional filtering:
-
-```http
-GET /metrics                                    # All metrics
-GET /metrics?requestType=/user/1                # Metrics for specific endpoint
-GET /metrics?startTime=2024-04-21T09:00:00Z    # Metrics after start time
-GET /metrics?endTime=2024-04-21T10:00:00Z      # Metrics before end time
-```
-
-Example response:
 ```json
 [
-    {
-        "requestType": "/user/1",
-        "startTime": "2024-04-21T09:30:42Z",
-        "endTime": "2024-04-21T09:30:42Z",
-        "durationMs": 109.32,
-        "cpuUsage": 8.44,
-        "memoryUsage": 950272,
-        "hasError": false,
-        "errorMessage": null,
-        "cpuPercentage": 7.72,
-        "memoryPercentage": 0.45,
-        "peakMemoryUsage": 1024000,
-        "averageCpuUsage": 0.077
-    }
+  {
+    "requestType": "/user/1",
+    "startTime": "2024-04-21T09:30:42.123Z",
+    "endTime": "2024-04-21T09:30:42.234Z",
+    "durationMs": 109.32,
+    "cpuUsage": 8.44,
+    "memoryUsage": 950272,
+    "cpuPercentage": 7.72,
+    "memoryPercentage": 0.45,
+    "peakMemoryUsage": 1024000,
+    "hasError": false
+  }
 ]
 ```
+
+#### Benefits of Metrics Collection
+
+1. **Performance Monitoring**:
+   - Track request durations
+   - Monitor CPU and memory usage
+   - Identify performance bottlenecks
+
+2. **Resource Optimization**:
+   - Analyze memory usage patterns
+   - Optimize CPU-intensive operations
+   - Plan resource allocation
+
+3. **Error Detection**:
+   - Monitor error rates
+   - Track error patterns
+   - Identify problematic endpoints
+
+4. **Capacity Planning**:
+   - Understand resource requirements
+   - Plan for scaling
+   - Optimize infrastructure
+
+#### Best Practices
+
+1. **Regular Monitoring**:
+   - Check metrics regularly
+   - Set up alerts for anomalies
+   - Monitor trends over time
+
+2. **Data Retention**:
+   - Clear metrics periodically
+   - Archive important data
+   - Consider storage limitations
+
+3. **Analysis**:
+   - Compare metrics across time periods
+   - Identify patterns and trends
+   - Use data for optimization
+
+4. **Integration**:
+   - Export data for analysis
+   - Use visualization tools
+   - Create custom dashboards
 
 ### Validation Behavior
 
