@@ -52,6 +52,45 @@ public class PipelinkConfiguration
         return this;
     }
 
+    /// <summary>
+    /// Registers an open generic pipeline behavior, e.g. <c>AddOpenBehavior(typeof(LoggingBehavior&lt;,&gt;))</c>.
+    /// Behaviors run in registration order: the first registered behavior is the outermost.
+    /// </summary>
+    /// <param name="openBehaviorType">
+    /// An open generic type implementing <see cref="IPipelineBehavior{TRequest,TResponse}"/>
+    /// or <see cref="IStreamPipelineBehavior{TRequest,TResponse}"/>.
+    /// </param>
+    /// <param name="lifetime">The service lifetime for the behavior. Defaults to transient.</param>
+    /// <returns>The configuration instance for method chaining.</returns>
+    public PipelinkConfiguration AddOpenBehavior(Type openBehaviorType, ServiceLifetime lifetime = ServiceLifetime.Transient)
+    {
+        ArgumentNullException.ThrowIfNull(openBehaviorType);
+
+        if (!openBehaviorType.IsGenericTypeDefinition)
+        {
+            throw new ArgumentException($"{openBehaviorType.Name} must be an open generic type, e.g. typeof(LoggingBehavior<,>).", nameof(openBehaviorType));
+        }
+
+        var implementedInterfaces = openBehaviorType.GetInterfaces()
+            .Where(i => i.IsGenericType)
+            .Select(i => i.GetGenericTypeDefinition())
+            .Where(i => i == typeof(IPipelineBehavior<,>) || i == typeof(IStreamPipelineBehavior<,>))
+            .Distinct()
+            .ToArray();
+
+        if (implementedInterfaces.Length == 0)
+        {
+            throw new ArgumentException($"{openBehaviorType.Name} must implement IPipelineBehavior<,> or IStreamPipelineBehavior<,>.", nameof(openBehaviorType));
+        }
+
+        foreach (var serviceType in implementedInterfaces)
+        {
+            _services.Add(new ServiceDescriptor(serviceType, openBehaviorType, lifetime));
+        }
+
+        return this;
+    }
+
     internal void RegisterServices()
     {
         if (!_assemblies.Any())
@@ -83,10 +122,5 @@ public class PipelinkConfiguration
                 .AsImplementedInterfaces()
                 .WithTransientLifetime());
         }
-
-        // Register core pipeline behaviors
-        _services.AddTransient(typeof(IPipelineBehavior<,>), typeof(Behaviors.LoggingBehavior<,>));
-        _services.AddTransient(typeof(IPipelineBehavior<,>), typeof(Behaviors.ValidationBehavior<,>));
-        _services.AddTransient(typeof(IPipelineBehavior<,>), typeof(Behaviors.CachingBehavior<,>));
     }
-} 
+}

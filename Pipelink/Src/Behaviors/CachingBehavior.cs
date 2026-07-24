@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Pipelink.Interfaces;
 
 namespace Pipelink.Behaviors;
@@ -10,20 +11,20 @@ namespace Pipelink.Behaviors;
 /// <typeparam name="TRequest">The type of the request. Must implement <see cref="IRequest{TResponse}"/>.</typeparam>
 /// <typeparam name="TResponse">The type of the response associated with the request.</typeparam>
 /// <remarks>
-/// This behavior can improve performance by minimizing repeated processing for identical requests
-/// across the pipeline. It stores responses in memory, and thus, the cache lifecycle is limited
-/// by the application's runtime.
+/// <para>
+/// This behavior is opt-in: register it explicitly via <c>cfg.AddOpenBehavior(typeof(CachingBehavior&lt;,&gt;))</c>.
+/// </para>
+/// <para>
+/// IMPORTANT: cache lookups rely on the request type's equality semantics. Use <c>record</c> requests (value equality)
+/// for cache hits to work; plain classes fall back to reference equality and will never hit the cache.
+/// The cache is process-wide, unbounded, and lives for the application's lifetime, so do not enable this behavior
+/// for requests whose responses contain per-user or otherwise sensitive data.
+/// </para>
 /// </remarks>
 public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+    where TRequest : notnull, IRequest<TResponse>
 {
-    /// <summary>
-    /// A static dictionary used to cache responses for requests of type <typeparamref name="TRequest"/>
-    /// to avoid redundant processing. The key is the request object of type <typeparamref name="TRequest"/>
-    /// and the value is the corresponding response of type <typeparamref name="TResponse"/>.
-    /// This helps in improving performance by reusing already computed responses for the same requests.
-    /// </summary>
-    private static readonly Dictionary<TRequest, TResponse> _cache = new();
+    private static readonly ConcurrentDictionary<TRequest, TResponse> Cache = new();
 
     /// <summary>
     /// Handles the processing of the pipeline behavior with caching capabilities.
@@ -37,14 +38,13 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
     /// <returns>A task representing the asynchronous operation, containing the response of type TResponse.</returns>
     public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
     {
-        if (_cache.TryGetValue(request, out var cachedResponse))
+        if (Cache.TryGetValue(request, out var cachedResponse))
         {
-            Console.WriteLine("[CACHE] Returning cached response");
             return cachedResponse;
         }
 
-        var response = await next();
-        _cache[request] = response;
+        var response = await next().ConfigureAwait(false);
+        Cache.TryAdd(request, response);
         return response;
     }
 }

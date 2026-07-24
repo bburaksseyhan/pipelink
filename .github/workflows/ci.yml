@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main, development, production]
+  pull_request:
+    branches: [main, development, production]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore pipelink.sln
+
+      - name: Build
+        run: dotnet build pipelink.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test pipelink.sln --no-build -c Release --verbosity normal

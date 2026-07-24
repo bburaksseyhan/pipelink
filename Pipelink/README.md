@@ -8,7 +8,6 @@ A lightweight implementation for executing command-query responsibility segregat
 - Notification publishing
 - Stream requests
 - Pipeline behaviors
-- Compression support
 - Easy integration with dependency injection
 
 ## Installation
@@ -32,7 +31,7 @@ public class MyRequest : IRequest<MyResponse>
 // Create a handler
 public class MyRequestHandler : IRequestHandler<MyRequest, MyResponse>
 {
-    public Task<MyResponse> Handle(MyRequest request)
+    public Task<MyResponse> Handle(MyRequest request, CancellationToken cancellationToken)
     {
         return Task.FromResult(new MyResponse { Result = $"Processed: {request.Message}" });
     }
@@ -44,7 +43,7 @@ var response = await pipelink.Send(new MyRequest { Message = "Hello" });
 
 ## Documentation
 
-For more information, visit the [GitHub repository](https://github.com/seyhanb/pipelink).
+For more information, visit the [GitHub repository](https://github.com/bburaksseyhan/pipelink).
 
 ## License
 

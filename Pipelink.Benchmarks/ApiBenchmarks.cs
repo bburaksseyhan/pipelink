@@ -4,9 +4,6 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
-using PipelinkTest.Api.Dtos;
-using Pipelink.Models;
-
 namespace Pipelink.Benchmarks
 {
     [MemoryDiagnoser]
@@ -30,19 +27,8 @@ namespace Pipelink.Benchmarks
         [Benchmark]
         public async Task LoginUser()
         {
-            var loginDto = new LoginUserDto
-            {
-                Username = "testuser",
-                Password = "testpassword"
-            };
+            var loginDto = new { Email = "user@example.com", Password = "testpassword" };
             var response = await _client.PostAsJsonAsync($"{_baseUrl}/login", loginDto);
-            response.EnsureSuccessStatusCode();
-        }
-
-        [Benchmark]
-        public async Task GetMetrics()
-        {
-            var response = await _client.GetAsync($"{_baseUrl}/metrics");
             response.EnsureSuccessStatusCode();
         }
 

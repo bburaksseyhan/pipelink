@@ -1,6 +1,21 @@
 @PipelinkTest.Api_HostAddress = http://localhost:5249
 
-GET {{PipelinkTest.Api_HostAddress}}/weatherforecast/
+### Get a user by id (Pipelink.Send)
+GET {{PipelinkTest.Api_HostAddress}}/user/1
 Accept: application/json
 
-###
+### Stream users (Pipelink.SendStream)
+GET {{PipelinkTest.Api_HostAddress}}/users/stream?count=5
+Accept: application/json
+
+### Login (Pipelink.Send with a command)
+POST {{PipelinkTest.Api_HostAddress}}/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "secret"
+}
+
+### Publish user-created notification (Pipelink.Publish, fans out to 2 handlers)
+POST {{PipelinkTest.Api_HostAddress}}/users/42/created?email=user42@example.com

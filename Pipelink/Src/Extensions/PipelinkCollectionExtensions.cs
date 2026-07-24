@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
-using Pipelink.Behaviors;
-using Pipelink.Handlers;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Pipelink.Interfaces;
 using System;
 
 namespace Pipelink.Extensions;
@@ -17,26 +17,21 @@ public static class PipelinkCollectionExtensions
     /// <param name="services">The service collection to add the Pipelink service to.</param>
     /// <param name="configureAction">Optional configuration action to configure Pipelink services.</param>
     /// <returns>The updated service collection with the Pipelink service registered.</returns>
+    /// <remarks>
+    /// Pipelink is registered as transient so that it resolves handlers from the scope it was created in,
+    /// which makes scoped dependencies (such as EF Core DbContext) inside handlers work correctly.
+    /// Inject <see cref="IPipelink"/> into your controllers, endpoints, or services.
+    /// </remarks>
     public static IServiceCollection AddPipelink(
         this IServiceCollection services,
         Action<PipelinkConfiguration>? configureAction = null)
     {
-        // Register core Pipelink service
-        services.AddSingleton<Implementation.Pipelink>();
+        services.TryAddTransient<Implementation.Pipelink>();
+        services.TryAddTransient<IPipelink>(sp => sp.GetRequiredService<Implementation.Pipelink>());
 
-        // Configure services if configuration action is provided
-        if (configureAction != null)
-        {
-            var configuration = new PipelinkConfiguration(services);
-            configureAction(configuration);
-            configuration.RegisterServices();
-        }
-        else
-        {
-            // If no configuration provided, register services from the entry assembly
-            var configuration = new PipelinkConfiguration(services);
-            configuration.RegisterServices();
-        }
+        var configuration = new PipelinkConfiguration(services);
+        configureAction?.Invoke(configuration);
+        configuration.RegisterServices();
 
         return services;
     }
