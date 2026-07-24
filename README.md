@@ -5,7 +5,7 @@
 [![CI](https://github.com/bburaksseyhan/pipelink/actions/workflows/ci.yml/badge.svg)](https://github.com/bburaksseyhan/pipelink/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/bburaksseyhan/pipelink.svg)](LICENSE)
 
-A lightweight, MIT-licensed mediator for .NET. Pipelink implements the request/response, notification, and streaming patterns commonly used with CQRS, and keeps its dependency footprint minimal: no ASP.NET Core reference, no third-party baggage — just `Microsoft.Extensions.DependencyInjection`, `Microsoft.Extensions.Logging.Abstractions`, and `Scrutor` for assembly scanning.
+A lightweight, MIT-licensed mediator for .NET. Pipelink implements the request/response, notification, and streaming patterns commonly used with CQRS, and keeps its dependency footprint minimal: no ASP.NET Core reference, no third-party dependencies at all — only `Microsoft.Extensions.DependencyInjection` and `Microsoft.Extensions.Logging.Abstractions`.
 
 ## Why Pipelink?
 

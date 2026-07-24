@@ -91,6 +91,13 @@ public class PipelinkConfiguration
         return this;
     }
 
+    private static readonly Type[] HandlerInterfaceDefinitions =
+    {
+        typeof(IRequestHandler<,>),
+        typeof(IStreamRequestHandler<,>),
+        typeof(INotificationHandler<>)
+    };
+
     internal void RegisterServices()
     {
         if (!_assemblies.Any())
@@ -99,28 +106,21 @@ public class PipelinkConfiguration
             _assemblies.Add(Assembly.GetEntryAssembly()!);
         }
 
-        foreach (var assembly in _assemblies)
+        foreach (var type in _assemblies.Distinct().SelectMany(assembly => assembly.DefinedTypes))
         {
-            // Register request handlers
-            _services.Scan(scan => scan
-                .FromAssemblies(assembly)
-                .AddClasses(classes => classes.AssignableTo(typeof(IRequestHandler<,>)))
-                .AsImplementedInterfaces()
-                .WithTransientLifetime());
+            if (type.IsAbstract || type.IsInterface || type.IsGenericTypeDefinition)
+            {
+                continue;
+            }
 
-            // Register stream request handlers
-            _services.Scan(scan => scan
-                .FromAssemblies(assembly)
-                .AddClasses(classes => classes.AssignableTo(typeof(IStreamRequestHandler<,>)))
-                .AsImplementedInterfaces()
-                .WithTransientLifetime());
-
-            // Register notification handlers
-            _services.Scan(scan => scan
-                .FromAssemblies(assembly)
-                .AddClasses(classes => classes.AssignableTo(typeof(INotificationHandler<>)))
-                .AsImplementedInterfaces()
-                .WithTransientLifetime());
+            foreach (var implementedInterface in type.ImplementedInterfaces)
+            {
+                if (implementedInterface.IsGenericType &&
+                    HandlerInterfaceDefinitions.Contains(implementedInterface.GetGenericTypeDefinition()))
+                {
+                    _services.AddTransient(implementedInterface, type);
+                }
+            }
         }
     }
 }
