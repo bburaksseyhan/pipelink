@@ -1,0 +1,49 @@
+name: Publish to NuGet
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for NuGet Trusted Publishing (OIDC token exchange)
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore pipelink.sln
+
+      - name: Build
+        run: dotnet build pipelink.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test pipelink.sln --no-build -c Release
+
+      - name: Pack
+        run: dotnet pack Pipelink/Pipelink.csproj --no-build -c Release -o ./nupkg
+
+      # Exchanges the GitHub OIDC token for a short-lived NuGet API key.
+      # Requires a Trusted Publishing policy on nuget.org pointing at this repo and workflow file.
+      - name: NuGet login (Trusted Publishing)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: burak-seyhan
+
+      - name: Push to NuGet.org
+        run: >
+          dotnet nuget push ./nupkg/*.nupkg
+          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
