@@ -1,14 +1,15 @@
 # Pipelink
 
-A lightweight implementation for executing command-query responsibility segregation (CQRS) patterns within applications. It acts as a mediator to send requests and publish notifications by delegating tasks to their respective handlers and/or behaviors.
+A lightweight, MIT-licensed mediator for .NET implementing the request/response, notification, and streaming patterns commonly used with CQRS. Familiar MediatR-style API with a minimal dependency footprint.
 
 ## Features
 
-- Request/Response pattern
-- Notification publishing
-- Stream requests
-- Pipeline behaviors
-- Easy integration with dependency injection
+- Request/response pattern (`IRequest<T>` / `IRequestHandler<,>`)
+- Notification publishing to multiple handlers
+- Streaming requests via `IAsyncEnumerable<T>`
+- Opt-in pipeline behaviors for cross-cutting concerns
+- Automatic handler registration through assembly scanning
+- Handlers resolved per dispatch — transient and scoped lifetimes (e.g. EF Core `DbContext`) work correctly
 
 ## Installation
 
@@ -19,32 +20,39 @@ dotnet add package Pipelink
 ## Quick Start
 
 ```csharp
-// Register Pipelink
-services.AddPipelink();
-
-// Create a request
-public class MyRequest : IRequest<MyResponse>
+// Register (Program.cs)
+builder.Services.AddPipelink(cfg =>
 {
-    public string Message { get; set; }
+    cfg.RegisterServicesFromAssemblyContaining<Program>();
+});
+
+// Define a request and its handler
+public record GetUserQuery(int UserId) : IRequest<UserDto>;
+
+public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserDto>
+{
+    public Task<UserDto> Handle(GetUserQuery request, CancellationToken cancellationToken)
+        => Task.FromResult(new UserDto(request.UserId, "Ada Lovelace"));
 }
 
-// Create a handler
-public class MyRequestHandler : IRequestHandler<MyRequest, MyResponse>
-{
-    public Task<MyResponse> Handle(MyRequest request, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new MyResponse { Result = $"Processed: {request.Message}" });
-    }
-}
+// Inject IPipelink anywhere and send
+var user = await pipelink.Send(new GetUserQuery(1));
+```
 
-// Use Pipelink
-var response = await pipelink.Send(new MyRequest { Message = "Hello" });
+Pipeline behaviors are opt-in and run in registration order:
+
+```csharp
+builder.Services.AddPipelink(cfg =>
+{
+    cfg.RegisterServicesFromAssemblyContaining<Program>();
+    cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+});
 ```
 
 ## Documentation
 
-For more information, visit the [GitHub repository](https://github.com/bburaksseyhan/pipelink).
+For full documentation, a MediatR migration guide, and samples, visit the [GitHub repository](https://github.com/bburaksseyhan/pipelink).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
