@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipelink — Lightweight Mediator for .NET</title>
+    <meta name="description" content="Pipelink is a free, MIT-licensed mediator library for .NET. Request/response, notifications, streaming, and pipeline behaviors with zero third-party dependencies.">
+    <link rel="icon" type="image/png" href="pipelink-icon.png">
+    <meta property="og:title" content="Pipelink — Lightweight Mediator for .NET">
+    <meta property="og:description" content="Free, MIT-licensed MediatR alternative. Zero third-party dependencies, built-in streaming, correct DI lifetimes.">
+    <meta property="og:url" content="https://pipelink.dev">
+    <meta property="og:type" content="website">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg-soft: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #9198a1;
+            --accent: #4dabf7;
+            --accent-2: #9775fa;
+            --green: #3fb950;
+            --code-bg: #11151b;
+            --radius: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+        }
+        code, pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .container { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+        header {
+            position: sticky; top: 0; z-index: 10;
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+        nav { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; color: var(--text); }
+        .brand img { width: 28px; height: 28px; border-radius: 6px; }
+        .nav-links { display: flex; gap: 22px; align-items: center; }
+        .nav-links a { color: var(--text-muted); font-size: 0.95rem; }
+        .nav-links a:hover { color: var(--text); text-decoration: none; }
+        .btn {
+            display: inline-block; padding: 10px 20px; border-radius: 8px;
+            font-weight: 600; font-size: 0.95rem; text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .btn:hover { transform: translateY(-1px); text-decoration: none; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+        .btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+
+        .hero { padding: 90px 0 60px; text-align: center; }
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.4rem);
+            line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 20px;
+        }
+        .hero h1 .gradient {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .hero p.lede {
+            font-size: 1.2rem; color: var(--text-muted);
+            max-width: 640px; margin: 0 auto 32px;
+        }
+        .hero .actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 28px; }
+        .install {
+            display: inline-flex; align-items: center; gap: 12px;
+            background: var(--code-bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 20px; font-size: 0.95rem;
+        }
+        .install .prompt { color: var(--green); }
+        .badges { margin-top: 26px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .badges img { height: 20px; }
+
+        section { padding: 56px 0; }
+        section h2 { font-size: 1.8rem; margin-bottom: 8px; letter-spacing: -0.01em; }
+        section p.sub { color: var(--text-muted); margin-bottom: 32px; max-width: 640px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px;
+        }
+        .card h3 { font-size: 1.05rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .card p { color: var(--text-muted); font-size: 0.95rem; }
+        .card .icon { font-size: 1.2rem; }
+
+        pre.code {
+            background: var(--code-bg); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 20px 22px;
+            overflow-x: auto; font-size: 0.88rem; line-height: 1.55;
+        }
+        .code .k { color: #ff7b72; }      /* keyword */
+        .code .t { color: #79c0ff; }      /* type */
+        .code .s { color: #a5d6ff; }      /* string */
+        .code .c { color: #8b949e; }      /* comment */
+        .code .m { color: #d2a8ff; }      /* method */
+
+        .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+        .step-label {
+            display: inline-block; font-size: 0.8rem; font-weight: 700;
+            color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+        th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-muted); font-weight: 600; }
+        td code { background: var(--code-bg); padding: 2px 7px; border-radius: 5px; font-size: 0.85rem; }
+        .table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; overflow-x: auto; }
+
+        footer {
+            border-top: 1px solid var(--border); padding: 36px 0;
+            color: var(--text-muted); font-size: 0.9rem; text-align: center;
+        }
+        footer a { color: var(--text-muted); }
+        footer a:hover { color: var(--text); }
+        .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; }
+
+        @media (max-width: 640px) {
+            .nav-links a:not(.btn) { display: none; }
+            .hero { padding: 60px 0 40px; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="container">
+        <nav>
+            <a class="brand" href="#"><img src="pipelink-icon.png" alt="Pipelink logo">Pipelink</a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#quickstart">Quick Start</a>
+                <a href="#migration">MediatR Migration</a>
+                <a class="btn btn-secondary" href="https://github.com/bburaksseyhan/pipelink">GitHub</a>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<main>
+    <div class="hero container">
+        <h1>A <span class="gradient">lightweight mediator</span><br>for modern .NET</h1>
+        <p class="lede">
+            Free and MIT-licensed. Request/response, notifications, streaming, and pipeline
+            behaviors — with zero third-party dependencies.
+        </p>
+        <div class="actions">
+            <a class="btn btn-primary" href="#quickstart">Get Started</a>
+            <a class="btn btn-secondary" href="https://www.nuget.org/packages/Pipelink">View on NuGet</a>
+        </div>
+        <div class="install"><span class="prompt">$</span> <code>dotnet add package Pipelink</code></div>
+        <div class="badges">
+            <img src="https://img.shields.io/nuget/v/Pipelink.svg" alt="NuGet version">
+            <img src="https://img.shields.io/nuget/dt/Pipelink.svg" alt="NuGet downloads">
+            <img src="https://github.com/bburaksseyhan/pipelink/actions/workflows/ci.yml/badge.svg" alt="CI status">
+            <img src="https://img.shields.io/github/license/bburaksseyhan/pipelink.svg" alt="License">
+        </div>
+    </div>
+
+    <section id="features">
+        <div class="container">
+            <h2>Why Pipelink?</h2>
+            <p class="sub">Everything you expect from a mediator, without the baggage.</p>
+            <div class="grid">
+                <div class="card">
+                    <h3><span class="icon">🪶</span>Zero third-party dependencies</h3>
+                    <p>Depends only on <code>Microsoft.Extensions.DependencyInjection</code> and <code>Logging.Abstractions</code>. No ASP.NET Core reference — works in console apps, workers, and MAUI.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="icon">🆓</span>Free &amp; MIT-licensed</h3>
+                    <p>No commercial licensing, no tiers, no surprises. Use it anywhere, forever.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="icon">⚡</span>Fast dispatch</h3>
+                    <p>Strongly-typed dispatchers are compiled once per request type and cached. No per-call reflection on the hot path.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="icon">🌊</span>Built-in streaming</h3>
+                    <p>First-class <code>IStreamRequest&lt;T&gt;</code> support with <code>IAsyncEnumerable&lt;T&gt;</code> and full cancellation.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="icon">🧩</span>Opt-in pipeline behaviors</h3>
+                    <p>Wrap requests with logging, validation, caching, or transactions. Nothing runs unless you register it — in the order you choose.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="icon">💉</span>Correct DI lifetimes</h3>
+                    <p>Handlers resolve from the container on every dispatch, so scoped dependencies like EF Core <code>DbContext</code> just work.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="quickstart" style="background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="container">
+            <h2>Quick Start</h2>
+            <p class="sub">Three steps from install to first request.</p>
+            <div class="steps">
+                <div>
+                    <span class="step-label">1 · Register</span>
+<pre class="code"><span class="c">// Program.cs</span>
+builder.Services.<span class="m">AddPipelink</span>(cfg =&gt;
+{
+    cfg.<span class="m">RegisterServicesFromAssemblyContaining</span>&lt;<span class="t">Program</span>&gt;();
+});</pre>
+                </div>
+                <div>
+                    <span class="step-label">2 · Define</span>
+<pre class="code"><span class="k">public record</span> <span class="t">GetUserQuery</span>(<span class="k">int</span> UserId) : <span class="t">IRequest</span>&lt;<span class="t">UserDto</span>&gt;;
+
+<span class="k">public class</span> <span class="t">GetUserQueryHandler</span>
+    : <span class="t">IRequestHandler</span>&lt;<span class="t">GetUserQuery</span>, <span class="t">UserDto</span>&gt;
+{
+    <span class="k">public</span> <span class="t">Task</span>&lt;<span class="t">UserDto</span>&gt; <span class="m">Handle</span>(<span class="t">GetUserQuery</span> request,
+        <span class="t">CancellationToken</span> ct) =&gt; <span class="c">/* ... */</span>;
+}</pre>
+                </div>
+                <div>
+                    <span class="step-label">3 · Send</span>
+<pre class="code">app.<span class="m">MapGet</span>(<span class="s">"/user/{id}"</span>,
+    <span class="k">async</span> (<span class="k">int</span> id, <span class="t">IPipelink</span> pipelink) =&gt;
+{
+    <span class="k">var</span> user = <span class="k">await</span> pipelink.<span class="m">Send</span>(<span class="k">new</span> <span class="t">GetUserQuery</span>(id));
+    <span class="k">return</span> <span class="t">Results</span>.<span class="m">Ok</span>(user);
+});</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="migration">
+        <div class="container">
+            <h2>Migrating from MediatR</h2>
+            <p class="sub">The concepts map one-to-one — most migrations are a find-and-replace that takes minutes.</p>
+            <div class="table-wrap">
+                <table>
+                    <tr><th>MediatR</th><th>Pipelink</th></tr>
+                    <tr><td><code>IMediator</code> / <code>ISender</code></td><td><code>IPipelink</code></td></tr>
+                    <tr><td><code>services.AddMediatR(cfg => ...)</code></td><td><code>services.AddPipelink(cfg => ...)</code></td></tr>
+                    <tr><td><code>IRequest&lt;TResponse&gt;</code></td><td>same</td></tr>
+                    <tr><td><code>IRequestHandler&lt;TRequest, TResponse&gt;</code></td><td>same</td></tr>
+                    <tr><td><code>INotification</code> / <code>INotificationHandler&lt;T&gt;</code></td><td>same</td></tr>
+                    <tr><td><code>CreateStream(...)</code></td><td><code>SendStream(...)</code></td></tr>
+                    <tr><td><code>cfg.AddOpenBehavior(typeof(...))</code></td><td>same</td></tr>
+                </table>
+            </div>
+            <p style="color: var(--text-muted); margin-top: 18px; font-size: 0.95rem;">
+                One signature difference: in Pipelink behaviors, <code>next</code> is the last parameter of <code>Handle</code>.
+                See the <a href="https://github.com/bburaksseyhan/pipelink#migrating-from-mediatr">full migration guide</a>.
+            </p>
+        </div>
+    </section>
+
+    <section style="text-align: center; padding-bottom: 80px;">
+        <div class="container">
+            <h2>Ready to try it?</h2>
+            <p class="sub" style="margin-left: auto; margin-right: auto;">Install the package and send your first request in under five minutes.</p>
+            <div class="actions" style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <a class="btn btn-primary" href="https://www.nuget.org/packages/Pipelink">Install from NuGet</a>
+                <a class="btn btn-secondary" href="https://github.com/bburaksseyhan/pipelink">Star on GitHub</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="container">
+        <div class="footer-links">
+            <a href="https://github.com/bburaksseyhan/pipelink">GitHub</a>
+            <a href="https://www.nuget.org/packages/Pipelink">NuGet</a>
+            <a href="https://github.com/bburaksseyhan/pipelink/releases">Releases</a>
+            <a href="https://github.com/bburaksseyhan/pipelink/blob/main/Pipelink/LICENSE">License</a>
+        </div>
+        <div>Pipelink is released under the MIT License.</div>
+    </div>
+</footer>
+</body>
+</html>
