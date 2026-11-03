@@ -37,19 +37,29 @@ See [CHANGELOG.md](CHANGELOG.md) for migration notes.
 
 ## Performance
 
-Pipelink is designed with performance in mind. Here are the latest benchmark results comparing Pipelink with MediatR:
+Benchmarks compare **Pipelink 2.0** (`chore/net10-migration`) with **MediatR 12.5** on the same handlers.
 
-| Method        | Mean     | Error    | StdDev   | Allocated | 
-|--------------|----------|----------|----------|-----------|
-| MediatR_Send | 83.13 ns | 0.333 ns | 0.642 ns | 384 B    |
-| Pipelink_Send| 39.10 ns | 0.179 ns | 0.340 ns | 280 B    |
+**Environment:** Apple M3, macOS 15.6.1, .NET SDK **10.0.102**, BenchmarkDotNet **0.14.0**, `SimpleJob` (warmup=2, iteration=5, launch=1), filter `*MediatorBenchmarks*`.
 
-Key Performance Improvements:
-- **53% Faster**: Pipelink is more than twice as fast as MediatR
-- **27% Less Memory**: Pipelink allocates significantly less memory per operation
-- **More Stable**: Lower standard deviation indicates more consistent performance
+| Method | Mean | Allocated | vs MediatR_Send (Mean) |
+|--------|-----:|----------:|------------------------:|
+| MediatR_Send | 58.5 ns | 272 B | 1.00× (baseline) |
+| Pipelink_Send | 308.8 ns | 776 B | 5.28× |
+| Pipelink_SendWithBehaviors | 396.5 ns | 1,256 B | 6.78× |
+| MediatR_Publish | 67.9 ns | 288 B | 1.16× |
+| Pipelink_Publish | 35.9 ns | 88 B | **0.61×** |
+| MediatR_SendStream | 10,954 ns | 816 B | 187× |
+| Pipelink_SendStream | 8,016 ns | 864 B | **137×** |
 
-*Note: Published numbers were captured on .NET 8.0 (pre-2.0). Re-run `Pipelink.Benchmarks` on your hardware after upgrading to .NET 10.*
+**Baseline (.NET 8, `production` worktree, same machine):** `MediatR_Send` 92.2 ns / 384 B, `Pipelink_Send` 45.6 ns / 280 B (~0.49×). The 1.x path used a compiled handler delegate **without** the behavior pipeline; 2.0 runs the full pipeline via generic dispatch (correctness over raw `Send` speed).
+
+**Pipelink-only (`PipelinkBenchmarks`):** `Send_SimpleRequest` 318.6 ns; `Send_RequestWithBehavior` 377.6 ns (three no-op behaviors); `Publish` 33.9 ns; `SendStream` (10 items) 542.3 ns.
+
+Reproduce:
+
+```bash
+dotnet run -c Release --project Pipelink.Benchmarks -- --filter '*MediatorBenchmarks*'
+```
 
 ## Installation
 
