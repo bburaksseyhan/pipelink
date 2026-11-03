@@ -11,9 +11,7 @@ using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
 // Register metrics collector
 builder.Services.AddSingleton<IMetricsCollector, InMemoryMetricsCollector>();
@@ -32,8 +30,7 @@ var pipelink = app.Services.GetRequiredService<Pipelink.Implementation.Pipelink>
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
@@ -49,28 +46,28 @@ app.MapGet("/user/{id}", async (int id) =>
     var user = await pipelink.Send(new GetUserQuery(id));
     return Results.Ok(user);
 }).WithName("GetUserById")
-.WithOpenApi();
+;
 
 app.MapPost("/login", async (LoginUserCommand command) => 
 {
     var loginUser = await pipelink.Send(command);
     return Results.Ok(loginUser);
 }).WithName("LoginUser")
-.WithOpenApi();
+;
 
 app.MapPost("/notify-user", async (UserCreatedNotification notification) =>
 {
     await pipelink.Publish(notification);
     return Results.Ok("Notification sent");
 }).WithName("NotifyUser")
-.WithOpenApi();
+;
 
 app.MapGet("/stream-users", async (int count = 10) =>
 {
     var users = pipelink.SendStream(new StreamUserQuery(count));
     return Results.Ok(users);
 }).WithName("StreamUsers")
-.WithOpenApi();
+;
 
 // Add metrics endpoint
 app.MapGet("/metrics", async (IMetricsCollector metricsCollector, 
@@ -81,7 +78,7 @@ app.MapGet("/metrics", async (IMetricsCollector metricsCollector,
     var metrics = await metricsCollector.GetMetricsAsync(startTime, endTime, requestType);
     return Results.Ok(metrics);
 }).WithName("GetMetrics")
-.WithOpenApi();
+;
 
 // Export metrics as CSV
 app.MapGet("/metrics/export/csv", async (IMetricsCollector metricsCollector,
@@ -103,7 +100,7 @@ app.MapGet("/metrics/export/csv", async (IMetricsCollector metricsCollector,
     
     return Results.Text(csv.ToString(), "text/csv", Encoding.UTF8);
 }).WithName("ExportMetricsCSV")
-.WithOpenApi();
+;
 
 // Export metrics as HTML visualization
 app.MapGet("/metrics/visualize", async (IMetricsCollector metricsCollector,
@@ -177,7 +174,7 @@ app.MapGet("/metrics/visualize", async (IMetricsCollector metricsCollector,
 
     return Results.Text(html.ToString(), "text/html", Encoding.UTF8);
 }).WithName("VisualizeMetrics")
-.WithOpenApi();
+;
 
 // Pretty print JSON metrics
 app.MapGet("/metrics/pretty", async (IMetricsCollector metricsCollector,
@@ -208,14 +205,13 @@ app.MapGet("/metrics/pretty", async (IMetricsCollector metricsCollector,
     
     return Results.Json(formattedMetrics, options);
 }).WithName("PrettyPrintMetrics")
-.WithOpenApi();
+;
 
 app.MapDelete("/metrics", async (IMetricsCollector metricsCollector) =>
 {
     await metricsCollector.ClearMetricsAsync();
     return Results.Ok(new { message = "Metrics data cleared successfully" });
 }).WithName("ClearMetrics")
-.WithOpenApi()
 .Produces(200, typeof(object), "application/json");
 
 await app.RunAsync();
