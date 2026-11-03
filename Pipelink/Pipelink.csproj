@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>true</IsPackable>
         <PackageId>Pipelink</PackageId>
-        <Version>1.0.8</Version>
+        <Version>2.0.0</Version>
         <Authors>Seyhan B.</Authors>
         <Company>Seyhan B.</Company>
         <Description>A lightweight implementation for executing command-query responsibility segregation (CQRS) patterns within applications. It acts as a mediator to send requests and publish notifications by delegating tasks to their respective handlers and/or behaviors.</Description>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/seyhanb/pipelink</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/seyhanb/pipelink</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/bburaksseyhan/pipelink</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/bburaksseyhan/pipelink</RepositoryUrl>
         <PackageTags>CQRS Mediator Command Query Request Response Notification Stream</PackageTags>
         <PackageIcon>pipelink-icon-optimized.png</PackageIcon>
         <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -20,16 +20,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="FluentValidation" Version="11.11.0" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
-      <PackageReference Include="Scrutor" Version="6.0.1" />
-      <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.0" />
-      <PackageReference Include="Microsoft.AspNetCore.App" Version="8.0.3" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+      <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Src/" />
+      <PackageReference Include="Scrutor" Version="6.1.0" />
     </ItemGroup>
 
     <ItemGroup>
