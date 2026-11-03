@@ -10,7 +10,7 @@ A lightweight implementation for executing command-query responsibility segregat
 Pipelink is inspired by [MediatR](https://github.com/jbogard/MediatR), a popular .NET library implementing the mediator pattern. While sharing similar core concepts with MediatR, Pipelink offers:
 
 - **Lightweight Implementation**: A streamlined approach focusing on essential CQRS functionality
-- **Modern .NET Features**: Built specifically for .NET 8.0, leveraging the latest framework capabilities
+- **Modern .NET Features**: Built for **.NET 10** (LTS), leveraging current framework capabilities
 - **Built-in Streaming**: Native support for streaming operations, ideal for handling large datasets
 - **Simplified Pipeline**: Straightforward behavior pipeline for cross-cutting concerns
 - **Modern Dependency Injection**: Seamless integration with Microsoft's DI container
@@ -26,7 +26,14 @@ Pipelink is inspired by [MediatR](https://github.com/jbogard/MediatR), a popular
 - **Type Safety**: Strongly typed requests, responses, and notifications
 - **High Performance**: Optimized for minimal overhead and memory usage
 - **Stream Requests**: Native support for streaming operations
-- **Compression Support**: Built-in support for data compression
+- **Request Metrics (optional)**: ASP.NET Core middleware for in-memory HTTP metrics
+
+## Requirements
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) or later (see `global.json` for the pinned SDK used by this repo)
+- **Breaking change:** Pipelink **2.0.0** targets `net10.0` only. Stay on **1.x** if you must remain on .NET 8/9.
+
+See [CHANGELOG.md](CHANGELOG.md) for migration notes.
 
 ## Performance
 
@@ -42,7 +49,7 @@ Key Performance Improvements:
 - **27% Less Memory**: Pipelink allocates significantly less memory per operation
 - **More Stable**: Lower standard deviation indicates more consistent performance
 
-*Note: Benchmarks were run on .NET 8.0, Release configuration on an Apple M3 processor using BenchmarkDotNet v0.14.0. Your results may vary depending on hardware and environment.*
+*Note: Published numbers were captured on .NET 8.0 (pre-2.0). Re-run `Pipelink.Benchmarks` on your hardware after upgrading to .NET 10.*
 
 ## Installation
 
@@ -306,4 +313,32 @@ The metrics collector captures the following information for each request:
 
 ### Validation Behavior
 
+Pipelink ships with `ValidationBehavior`, which rejects null requests before the handler runs. Extend or replace it with your own `IPipelineBehavior<TRequest, TResponse>` implementations (for example FluentValidation in **your** application layer — the core package does not take a hard dependency on FluentValidation).
+
+Pipeline behaviors registered via `AddPipelink` run **outermost-first** in DI registration order (default: Logging → Validation → Caching → handler).
+
+```csharp
+public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
+{
+    public async Task<TResponse> Handle(
+        TRequest request,
+        CancellationToken cancellationToken,
+        RequestHandlerDelegate<TResponse> next)
+    {
+        if (request is null)
+            throw new ArgumentException("Request cannot be null");
+
+        // Add custom validation (FluentValidation, DataAnnotations, etc.)
+        return await next();
+    }
+}
+```
+
+## Building and testing
+
+```bash
+dotnet build pipelink.sln -c Release
+dotnet test pipelink.sln -c Release
+dotnet run --project PipelinkTest.Api
 ```
