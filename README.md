@@ -352,3 +352,5 @@ dotnet build pipelink.sln -c Release
 dotnet test pipelink.sln -c Release
 dotnet run --project PipelinkTest.Api
 ```
+
+Sample **API**, **Worker**, and **Console** hosts: see [docs/samples-hosting.md](docs/samples-hosting.md).
