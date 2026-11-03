@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +15,9 @@ namespace Pipelink.Implementation;
 public sealed class Pipelink : IPipelink
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly ConcurrentDictionary<(Type RequestType, Type ResponseType), object> _sendPipelineCache = new();
+    private readonly ConcurrentDictionary<(Type RequestType, Type ResponseType), object> _behaviorListCache = new();
+
     private static readonly MethodInfo SendPipelineMethod =
         typeof(Pipelink).GetMethod(nameof(SendPipelineImpl), BindingFlags.NonPublic | BindingFlags.Instance)!;
 
@@ -22,13 +27,41 @@ public sealed class Pipelink : IPipelink
     }
 
     /// <inheritdoc />
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+
         var requestType = request.GetType();
-        var method = SendPipelineMethod.MakeGenericMethod(requestType, typeof(TResponse));
-        var task = (Task<TResponse>)method.Invoke(this, new object[] { request, cancellationToken })!;
-        return await task.ConfigureAwait(false);
+        var responseType = typeof(TResponse);
+        var key = (requestType, responseType);
+
+        var invoker = (SendPipelineInvoker<TResponse>)_sendPipelineCache.GetOrAdd(
+            key,
+            static (k, self) => CreateSendPipelineInvoker<TResponse>(self, k.RequestType),
+            this);
+
+        return invoker(this, request, cancellationToken);
+    }
+
+    private static SendPipelineInvoker<TResponse> CreateSendPipelineInvoker<TResponse>(
+        Pipelink pipelink,
+        Type requestType)
+    {
+        var pipelinkParam = Expression.Parameter(typeof(Pipelink), "pipelink");
+        var requestParam = Expression.Parameter(typeof(object), "request");
+        var cancellationTokenParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
+
+        var pipelineMethod = SendPipelineMethod.MakeGenericMethod(requestType, typeof(TResponse));
+        var requestCast = Expression.Convert(requestParam, requestType);
+        var call = Expression.Call(pipelinkParam, pipelineMethod, requestCast, cancellationTokenParam);
+
+        var lambda = Expression.Lambda<SendPipelineInvoker<TResponse>>(
+            call,
+            pipelinkParam,
+            requestParam,
+            cancellationTokenParam);
+
+        return lambda.Compile();
     }
 
     private async Task<TResponse> SendPipelineImpl<TRequest, TResponse>(
@@ -36,10 +69,15 @@ public sealed class Pipelink : IPipelink
         CancellationToken cancellationToken)
         where TRequest : IRequest<TResponse>
     {
+        var key = (typeof(TRequest), typeof(TResponse));
+        var behaviors = (IPipelineBehavior<TRequest, TResponse>[])_behaviorListCache.GetOrAdd(
+            key,
+            static (k, sp) => sp.GetServices<IPipelineBehavior<TRequest, TResponse>>().ToArray(),
+            _serviceProvider);
+
         RequestHandlerDelegate<TResponse> next = () =>
             InvokeHandlerAsync<TRequest, TResponse>(request, cancellationToken);
 
-        var behaviors = _serviceProvider.GetServices<IPipelineBehavior<TRequest, TResponse>>().ToArray();
         for (var i = behaviors.Length - 1; i >= 0; i--)
         {
             var behavior = behaviors[i];
@@ -88,4 +126,9 @@ public sealed class Pipelink : IPipelink
             await handler.Handle(notification, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private delegate Task<TResponse> SendPipelineInvoker<TResponse>(
+        Pipelink pipelink,
+        object request,
+        CancellationToken cancellationToken);
 }
