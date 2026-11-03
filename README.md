@@ -43,15 +43,15 @@ Benchmarks compare **Pipelink 2.0** (`chore/net10-migration`) with **MediatR 12.
 
 | Method | Mean | Allocated | vs MediatR_Send (Mean) |
 |--------|-----:|----------:|------------------------:|
-| MediatR_Send | 58.5 ns | 272 B | 1.00× (baseline) |
-| Pipelink_Send | 308.8 ns | 776 B | 5.28× |
-| Pipelink_SendWithBehaviors | 396.5 ns | 1,256 B | 6.78× |
-| MediatR_Publish | 67.9 ns | 288 B | 1.16× |
-| Pipelink_Publish | 35.9 ns | 88 B | **0.61×** |
-| MediatR_SendStream | 10,954 ns | 816 B | 187× |
-| Pipelink_SendStream | 8,016 ns | 864 B | **137×** |
+| MediatR_Send | 59.0 ns | 272 B | 1.00× (baseline) |
+| Pipelink_Send | 84.4 ns | 416 B | 1.43× |
+| Pipelink_SendWithBehaviors | 142.6 ns | 728 B | 2.42× |
+| MediatR_Publish | 79.5 ns | 288 B | 1.35× |
+| Pipelink_Publish | 34.2 ns | 88 B | **0.58×** |
+| MediatR_SendStream | 8,798 ns | 816 B | 149× |
+| Pipelink_SendStream | 8,630 ns | 864 B | **146×** |
 
-**Baseline (.NET 8, `production` worktree, same machine):** `MediatR_Send` 92.2 ns / 384 B, `Pipelink_Send` 45.6 ns / 280 B (~0.49×). The 1.x path used a compiled handler delegate **without** the behavior pipeline; 2.0 runs the full pipeline via generic dispatch (correctness over raw `Send` speed).
+**Baseline (.NET 8, `production` worktree):** `Pipelink_Send` ~45.6 ns / 280 B (~0.49× MediatR). **2.0.0+** caches a compiled pipeline invoker per `(requestType, responseType)` so `Send` keeps the behavior pipeline without per-call `Method.Invoke`.
 
 **Pipelink-only (`PipelinkBenchmarks`):** `Send_SimpleRequest` 318.6 ns; `Send_RequestWithBehavior` 377.6 ns (three no-op behaviors); `Publish` 33.9 ns; `SendStream` (10 items) 542.3 ns.
 
