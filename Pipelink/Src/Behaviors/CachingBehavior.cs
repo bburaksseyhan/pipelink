@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Pipelink.Interfaces;
 
 namespace Pipelink.Behaviors;
@@ -23,7 +24,7 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
     /// and the value is the corresponding response of type <typeparamref name="TResponse"/>.
     /// This helps in improving performance by reusing already computed responses for the same requests.
     /// </summary>
-    private static readonly Dictionary<TRequest, TResponse> _cache = new();
+    private static readonly ConcurrentDictionary<TRequest, TResponse> _cache = new();
 
     /// <summary>
     /// Handles the processing of the pipeline behavior with caching capabilities.

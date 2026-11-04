@@ -21,8 +21,9 @@ public static class PipelinkCollectionExtensions
         this IServiceCollection services,
         Action<PipelinkConfiguration>? configureAction = null)
     {
-        // Register core Pipelink service
-        services.AddSingleton<Implementation.Pipelink>();
+        // Transient so handlers resolve from the caller's scope; the dispatch cache stays per container.
+        services.AddSingleton<Implementation.Pipelink.DispatchCache>();
+        services.AddTransient(sp => new Implementation.Pipelink(sp, sp.GetRequiredService<Implementation.Pipelink.DispatchCache>()));
 
         // Configure services if configuration action is provided
         if (configureAction != null)

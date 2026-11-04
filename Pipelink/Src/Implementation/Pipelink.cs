@@ -13,12 +13,21 @@ namespace Pipelink.Implementation;
 public sealed class Pipelink : IPipelink
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ConcurrentDictionary<Type, object> _requestWrappers = new();
-    private readonly ConcurrentDictionary<(Type RequestType, Type ResponseType), object> _multiResponseWrappers = new();
+    private readonly DispatchCache _cache;
 
+    /// <summary>
+    /// Creates a mediator with its own dispatch cache. Prefer resolving <see cref="Pipelink"/> from a container
+    /// configured with <c>AddPipelink</c>, which shares one cache per container and resolves handlers from the current scope.
+    /// </summary>
     public Pipelink(IServiceProvider serviceProvider)
+        : this(serviceProvider, new DispatchCache())
+    {
+    }
+
+    internal Pipelink(IServiceProvider serviceProvider, DispatchCache cache)
     {
         _serviceProvider = serviceProvider;
+        _cache = cache;
     }
 
     /// <inheritdoc />
@@ -27,10 +36,10 @@ public sealed class Pipelink : IPipelink
         ArgumentNullException.ThrowIfNull(request);
 
         var requestType = request.GetType();
-        if (_requestWrappers.GetOrAdd(requestType, static t => CreateWrapper<TResponse>(t)) is not RequestWrapper<TResponse> wrapper)
+        if (_cache.RequestWrappers.GetOrAdd(requestType, static t => CreateWrapper<TResponse>(t)) is not RequestWrapper<TResponse> wrapper)
         {
             // A request type implementing IRequest<T> for several T needs a response-specific wrapper.
-            wrapper = (RequestWrapper<TResponse>)_multiResponseWrappers.GetOrAdd(
+            wrapper = (RequestWrapper<TResponse>)_cache.MultiResponseWrappers.GetOrAdd(
                 (requestType, typeof(TResponse)),
                 static k => CreateWrapper<TResponse>(k.RequestType));
         }
@@ -69,6 +78,16 @@ public sealed class Pipelink : IPipelink
         {
             await handler.Handle(notification, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Per-container dispatch state shared by all <see cref="Pipelink"/> instances resolved from that container.
+    /// </summary>
+    internal sealed class DispatchCache
+    {
+        public ConcurrentDictionary<Type, object> RequestWrappers { get; } = new();
+
+        public ConcurrentDictionary<(Type RequestType, Type ResponseType), object> MultiResponseWrappers { get; } = new();
     }
 
     private abstract class RequestWrapper<TResponse>

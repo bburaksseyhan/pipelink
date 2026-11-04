@@ -51,7 +51,7 @@ Benchmarks compare **Pipelink 2.0** (`chore/net10-migration`) with **MediatR 12.
 | MediatR_SendStream | 8,798 ns | 816 B | 149× |
 | Pipelink_SendStream | 8,630 ns | 864 B | **146×** |
 
-The three `Send` rows come from a longer run (`--iterationCount 15 --warmupCount 5`); across runs MediatR_Send measured 62–74 ns and Pipelink_Send 37–39 ns. `SendWithBehaviors` uses three transient no-op behaviors, resolved from DI on every call.
+The three `Send` rows come from a longer run (`--iterationCount 15 --warmupCount 5`); across runs MediatR_Send measured 61–74 ns, Pipelink_Send 36–44 ns and Pipelink_SendWithBehaviors 104–131 ns. `SendWithBehaviors` uses three transient no-op behaviors, resolved from DI on every call.
 
 **Baseline (.NET 8, `production` worktree):** `Pipelink_Send` ~45.6 ns / 280 B (~0.49× MediatR). **2.0.0+** caches one generic request wrapper per request type: with no behaviors registered, `Send` calls the handler directly with no closures or extra async state machines. Behavior instances are resolved per call so their DI lifetimes are respected.
 
@@ -80,6 +80,8 @@ services.AddPipelink(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<Startup>();
 });
 ```
+
+`Pipelink` is registered as transient so handlers resolve from the current DI scope. Inject it into controllers, endpoints or scoped services rather than resolving it once from `app.Services`.
 
 ### 2. Create a request and response
 

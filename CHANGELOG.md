@@ -8,12 +8,16 @@ All notable changes to this project are documented in this file.
 
 - Target framework is **`net10.0` only** (drops .NET 8/9 support).
 - NuGet package version **2.0.0** — consumers must upgrade the SDK/runtime before referencing this package.
+- `AddPipelink` registers `Pipelink` as **transient** (was singleton) so handlers and behaviors resolve from the caller's DI scope. Inject it where you use it (controller, endpoint, scoped service) instead of resolving it once from `app.Services`; a root-resolved instance cannot reach scoped dependencies. The dispatch cache is a per-container singleton, so `Send` speed is unchanged.
 
 ### Fixed
 
 - **`Send` now executes the `IPipelineBehavior` pipeline** before the request handler (registration order = outermost-first). Previously behaviors were registered in DI but bypassed.
 - **Pipeline behaviors** are resolved from DI on every `Send`, so transient/scoped behavior lifetimes are honored (an interim build cached behavior instances).
 - **`Send` fast path:** one cached generic wrapper per request type replaces compiled expression trees; with no behaviors registered the handler is called directly (~37 ns / 208 B vs MediatR 12.5 ~62–74 ns / 272 B on Apple M3).
+- Handlers with **scoped dependencies** (for example a `DbContext`) no longer fail with "Cannot resolve ... from root provider" when `Send` is called inside a request scope.
+- **`CachingBehavior`** uses a `ConcurrentDictionary`; the previous `Dictionary` could be corrupted by concurrent requests ("Operations that change non-concurrent collections must have exclusive access").
+- Sample API `/metrics/visualize` no longer returns 500 when no metrics are recorded.
 - **Stream handlers** are resolved from DI on each call (no stale singleton handler in compiled delegates).
 - **`Publish`** uses typed `INotificationHandler<T>` dispatch instead of reflection-only invocation.
 - Removed duplicate **`StreamUserQueryHandler`** in the sample API.
@@ -27,6 +31,7 @@ All notable changes to this project are documented in this file.
 - Demo API uses built-in **`AddOpenApi` / `MapOpenApi`** instead of Swashbuckle (Swashbuckle 8.x was incompatible with .NET 10 at migration time).
 - Added **`global.json`** pinning SDK 10.0.102.
 - Added **`Pipelink.Tests`** (xUnit) covering Send, Publish, SendStream, pipeline ordering, and DI registration.
+- Added **`Pipelink.IntegrationTests`**: the sample API over HTTP (`WebApplicationFactory`), the Worker and Console samples on a real generic host and as separate processes, scoped dependencies, and concurrent `Send`.
 
 ### Notes / follow-ups
 

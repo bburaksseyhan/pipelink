@@ -25,8 +25,6 @@ builder.Services.AddPipelink(cfg =>
 
 var app = builder.Build();
 
-var pipelink = app.Services.GetRequiredService<Pipelink.Implementation.Pipelink>();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -41,28 +39,28 @@ app.UseMetrics();
 // Map gRPC service
 // app.MapGrpcService<MetricsGrpcService>();
 
-app.MapGet("/user/{id}", async (int id) =>
+app.MapGet("/user/{id}", async (int id, Pipelink.Implementation.Pipelink pipelink) =>
 {
     var user = await pipelink.Send(new GetUserQuery(id));
     return Results.Ok(user);
 }).WithName("GetUserById")
 ;
 
-app.MapPost("/login", async (LoginUserCommand command) => 
+app.MapPost("/login", async (LoginUserCommand command, Pipelink.Implementation.Pipelink pipelink) => 
 {
     var loginUser = await pipelink.Send(command);
     return Results.Ok(loginUser);
 }).WithName("LoginUser")
 ;
 
-app.MapPost("/notify-user", async (UserCreatedNotification notification) =>
+app.MapPost("/notify-user", async (UserCreatedNotification notification, Pipelink.Implementation.Pipelink pipelink) =>
 {
     await pipelink.Publish(notification);
     return Results.Ok("Notification sent");
 }).WithName("NotifyUser")
 ;
 
-app.MapGet("/stream-users", async (int count = 10) =>
+app.MapGet("/stream-users", (Pipelink.Implementation.Pipelink pipelink, int count = 10) =>
 {
     var users = pipelink.SendStream(new StreamUserQuery(count));
     return Results.Ok(users);
@@ -132,8 +130,8 @@ app.MapGet("/metrics/visualize", async (IMetricsCollector metricsCollector,
     <div class='metric-header'>
         <h2>Summary</h2>
         <p>Total Requests: {metrics.Length}</p>
-        <p>Average Duration: {metrics.Average(m => m.DurationMs):F2} ms</p>
-        <p>Average CPU Usage: {metrics.Average(m => m.CpuUsage):F2} ms</p>
+        <p>Average Duration: {(metrics.Length > 0 ? metrics.Average(m => m.DurationMs) : 0):F2} ms</p>
+        <p>Average CPU Usage: {(metrics.Length > 0 ? metrics.Average(m => m.CpuUsage) : 0):F2} ms</p>
         <p>Total Memory Usage: {metrics.Sum(m => m.MemoryUsage):N0} bytes</p>
     </div>");
 
