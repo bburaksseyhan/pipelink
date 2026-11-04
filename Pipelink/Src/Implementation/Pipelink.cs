@@ -116,10 +116,16 @@ public sealed class Pipelink : IPipelink
             var typedRequest = (TRequest)request;
             var handler = serviceProvider.GetRequiredService<IRequestHandler<TRequest, TResponse>>();
 
+            var resolvedBehaviors = serviceProvider.GetServices<IPipelineBehavior<TRequest, TResponse>>();
+            var behaviors = resolvedBehaviors as IPipelineBehavior<TRequest, TResponse>[] ?? resolvedBehaviors.ToArray();
+            if (behaviors.Length == 0)
+            {
+                return handler.Handle(typedRequest, cancellationToken);
+            }
+
             RequestHandlerDelegate<TResponse> next = () => handler.Handle(typedRequest, cancellationToken);
 
             // Wrap in reverse so the first registered behavior is the outermost (runs first).
-            var behaviors = serviceProvider.GetServices<IPipelineBehavior<TRequest, TResponse>>().ToArray();
             for (var i = behaviors.Length - 1; i >= 0; i--)
             {
                 var behavior = behaviors[i];
