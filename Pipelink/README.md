@@ -1,15 +1,18 @@
 # Pipelink
 
-A lightweight implementation for executing command-query responsibility segregation (CQRS) patterns within applications. It acts as a mediator to send requests and publish notifications by delegating tasks to their respective handlers and/or behaviors.
+A lightweight, MIT-licensed mediator for CQRS on .NET 10. Send requests, publish notifications and stream responses through their handlers, with an optional pipeline of behaviors.
 
 ## Features
 
-- Request/Response pattern
-- Notification publishing
-- Stream requests
-- Pipeline behaviors
-- Compression support
-- Easy integration with dependency injection
+- Request/response (`Send`) with `IPipelineBehavior` pipeline
+- Notification publishing (`Publish`)
+- Stream requests (`SendStream`)
+- Assembly scanning for handlers via `AddPipelink`
+- Works in ASP.NET Core, Worker Service and console hosts
+
+## Requirements
+
+.NET 10 (`net10.0`). Version 2.x drops .NET 8/9; use Pipelink 1.x for older runtimes.
 
 ## Installation
 
@@ -20,32 +23,39 @@ dotnet add package Pipelink
 ## Quick Start
 
 ```csharp
-// Register Pipelink
-services.AddPipelink();
+using Pipelink.Extensions;
+using Pipelink.Handlers;
+using Pipelink.Interfaces;
 
-// Create a request
-public class MyRequest : IRequest<MyResponse>
+builder.Services.AddPipelink(cfg => cfg.RegisterServicesFromAssemblyContaining<Program>());
+
+public record GetUserQuery(int Id) : IRequest<UserDto>;
+public record UserDto(int Id, string Name);
+
+public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserDto>
 {
-    public string Message { get; set; }
+    public Task<UserDto> Handle(GetUserQuery request, CancellationToken cancellationToken) =>
+        Task.FromResult(new UserDto(request.Id, "John Doe"));
 }
 
-// Create a handler
-public class MyRequestHandler : IRequestHandler<MyRequest, MyResponse>
-{
-    public Task<MyResponse> Handle(MyRequest request)
-    {
-        return Task.FromResult(new MyResponse { Result = $"Processed: {request.Message}" });
-    }
-}
-
-// Use Pipelink
-var response = await pipelink.Send(new MyRequest { Message = "Hello" });
+app.MapGet("/user/{id}", (int id, Pipelink.Implementation.Pipelink pipelink) =>
+    pipelink.Send(new GetUserQuery(id)));
 ```
+
+`Pipelink` is registered as transient so handlers resolve from the current DI scope. Inject it where you use it instead of resolving it once from `app.Services`.
+
+## Upgrading from 1.x
+
+- Target framework is `net10.0` only.
+- Registered `IPipelineBehavior`s now run on `Send`.
+- `Pipelink` is transient instead of singleton.
+
+See the [CHANGELOG](https://github.com/bburaksseyhan/pipelink/blob/production/CHANGELOG.md) for details.
 
 ## Documentation
 
-For more information, visit the [GitHub repository](https://github.com/seyhanb/pipelink).
+[GitHub repository](https://github.com/bburaksseyhan/pipelink)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+MIT
