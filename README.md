@@ -24,7 +24,7 @@ Pipelink is inspired by [MediatR](https://github.com/jbogard/MediatR). If you ar
 dotnet add package Pipelink
 ```
 
-Requires .NET 8.0 or later.
+Requires .NET 10. Pipelink 2.x targets `net10.0` only; stay on Pipelink 1.x for .NET 8 or 9.
 
 ## Quick Start
 
@@ -210,7 +210,16 @@ Other differences to be aware of:
 
 ## Performance
 
-Pipelink compiles a strongly-typed dispatcher per request type on first use and caches it, avoiding per-call reflection. Earlier benchmarks (v1.0.x) measured `Send` at roughly half the latency and 27% fewer allocations than MediatR on the same machine; those numbers predate the behavior pipeline introduced in v1.1.0 and are being re-measured. Run the included [BenchmarkDotNet suite](Pipelink.Benchmarks) to measure on your own hardware:
+Pipelink compiles a strongly-typed dispatcher per request type on first use and caches it, avoiding per-call reflection. When no behaviors are registered for a request, the handler is called directly.
+
+`Send` with one handler and no behaviors, measured with BenchmarkDotNet 0.14.0 on .NET 10.0.2 (Apple M3, 15 iterations):
+
+| Library | Mean | Allocated |
+|---|---:|---:|
+| MediatR 12.5.0 | 67.2 ns | 272 B |
+| Pipelink 2.0.0 | 53.5 ns | 208 B |
+
+Run the included [BenchmarkDotNet suite](Pipelink.Benchmarks) to measure on your own hardware:
 
 ```bash
 dotnet run --project Pipelink.Benchmarks -c Release
@@ -219,8 +228,11 @@ dotnet run --project Pipelink.Benchmarks -c Release
 ## Repository Layout
 
 - [`Pipelink`](Pipelink) — the library (published to NuGet)
-- [`Pipelink.Tests`](Pipelink.Tests) — xUnit test suite
+- [`Pipelink.Tests`](Pipelink.Tests) — xUnit unit tests
+- [`Pipelink.IntegrationTests`](Pipelink.IntegrationTests) — the samples exercised over HTTP, on a real generic host and as separate processes
 - [`PipelinkTest.Api`](PipelinkTest.Api) — sample ASP.NET Core minimal API showing `Send`, `SendStream`, `Publish`, and behaviors
+- [`PipelinkTest.Worker`](PipelinkTest.Worker) — sample Worker Service sending a command per tick in its own DI scope (`--run-once` to exit after one tick)
+- [`PipelinkTest.Console`](PipelinkTest.Console) — sample console app on the generic host
 - [`Pipelink.Benchmarks`](Pipelink.Benchmarks) — BenchmarkDotNet comparisons
 
 ## Contributing

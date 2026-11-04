@@ -17,6 +17,8 @@ A lightweight, MIT-licensed mediator for .NET implementing the request/response,
 dotnet add package Pipelink
 ```
 
+Requires .NET 10. Pipelink 2.x targets `net10.0` only; stay on Pipelink 1.x for .NET 8 or 9.
+
 ## Quick Start
 
 ```csharp
