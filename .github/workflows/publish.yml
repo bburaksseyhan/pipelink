@@ -1,5 +1,6 @@
 name: Publish to NuGet
 
+# Release by pushing a tag that matches <Version> in Pipelink/Pipelink.csproj, e.g. v2.0.0.
 on:
   push:
     tags:
@@ -19,7 +20,18 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          global-json-file: global.json
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          project_version=$(dotnet msbuild Pipelink/Pipelink.csproj -getProperty:Version)
+          tag_version="${GITHUB_REF_NAME#v}"
+          echo "Project version: $project_version, tag version: $tag_version"
+          if [ "$project_version" != "$tag_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match <Version>$project_version</Version> in Pipelink/Pipelink.csproj"
+            exit 1
+          fi
 
       - name: Restore
         run: dotnet restore pipelink.sln

@@ -13,8 +13,7 @@ public static class UserEndpoints
             var user = await pipelink.Send(new GetUserQuery(id), cancellationToken);
             return user is null ? Results.NotFound() : Results.Ok(user);
         })
-        .WithName("GetUserById")
-        .WithOpenApi();
+        .WithName("GetUserById");
 
         app.MapGet("/users/stream", (IPipelink pipelink, CancellationToken cancellationToken, int count = 10) =>
         {
@@ -22,16 +21,14 @@ public static class UserEndpoints
             var users = pipelink.SendStream(new StreamUsersQuery(count), cancellationToken);
             return Results.Ok(users);
         })
-        .WithName("StreamUsers")
-        .WithOpenApi();
+        .WithName("StreamUsers");
 
         app.MapPost("/login", async (LoginUserCommand command, IPipelink pipelink, CancellationToken cancellationToken) =>
         {
             var result = await pipelink.Send(command, cancellationToken);
             return result.Success ? Results.Ok(result) : Results.Unauthorized();
         })
-        .WithName("LoginUser")
-        .WithOpenApi();
+        .WithName("LoginUser");
 
         app.MapPost("/users/{id:int}/created", async (int id, string email, IPipelink pipelink, CancellationToken cancellationToken) =>
         {
@@ -39,8 +36,7 @@ public static class UserEndpoints
             await pipelink.Publish(new UserCreatedNotification(id, email), cancellationToken);
             return Results.Accepted();
         })
-        .WithName("NotifyUserCreated")
-        .WithOpenApi();
+        .WithName("NotifyUserCreated");
 
         return app;
     }

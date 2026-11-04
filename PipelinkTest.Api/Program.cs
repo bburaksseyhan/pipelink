@@ -5,8 +5,7 @@ using PipelinkTest.Api.Features.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
 // A scoped dependency consumed by handlers, to demonstrate DI inside handlers
 builder.Services.AddScoped<IUserRepository, InMemoryUserRepository>();
@@ -22,8 +21,7 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();

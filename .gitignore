@@ -1,0 +1,11 @@
+bin/
+obj/
+nupkg/
+artifacts/
+BenchmarkDotNet.Artifacts/
+TestResults/
+.vs/
+.idea/
+*.user
+*.DotSettings.user
+.DS_Store
