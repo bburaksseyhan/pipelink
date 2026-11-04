@@ -43,15 +43,17 @@ Benchmarks compare **Pipelink 2.0** (`chore/net10-migration`) with **MediatR 12.
 
 | Method | Mean | Allocated | vs MediatR_Send (Mean) |
 |--------|-----:|----------:|------------------------:|
-| MediatR_Send | 59.0 ns | 272 B | 1.00× (baseline) |
-| Pipelink_Send | 84.4 ns | 416 B | 1.43× |
-| Pipelink_SendWithBehaviors | 142.6 ns | 728 B | 2.42× |
+| MediatR_Send | 73.6 ns | 272 B | 1.00× (baseline) |
+| Pipelink_Send | 36.9 ns | 208 B | **0.52×** |
+| Pipelink_SendWithBehaviors | 104.3 ns | 704 B | 1.46× |
 | MediatR_Publish | 79.5 ns | 288 B | 1.35× |
 | Pipelink_Publish | 34.2 ns | 88 B | **0.58×** |
 | MediatR_SendStream | 8,798 ns | 816 B | 149× |
 | Pipelink_SendStream | 8,630 ns | 864 B | **146×** |
 
-**Baseline (.NET 8, `production` worktree):** `Pipelink_Send` ~45.6 ns / 280 B (~0.49× MediatR). **2.0.0+** caches a compiled pipeline invoker per `(requestType, responseType)` so `Send` keeps the behavior pipeline without per-call `Method.Invoke`.
+The three `Send` rows come from a longer run (`--iterationCount 15 --warmupCount 5`); across runs MediatR_Send measured 62–74 ns and Pipelink_Send 37–39 ns. `SendWithBehaviors` uses three transient no-op behaviors, resolved from DI on every call.
+
+**Baseline (.NET 8, `production` worktree):** `Pipelink_Send` ~45.6 ns / 280 B (~0.49× MediatR). **2.0.0+** caches one generic request wrapper per request type: with no behaviors registered, `Send` calls the handler directly with no closures or extra async state machines. Behavior instances are resolved per call so their DI lifetimes are respected.
 
 **Pipelink-only (`PipelinkBenchmarks`):** `Send_SimpleRequest` 318.6 ns; `Send_RequestWithBehavior` 377.6 ns (three no-op behaviors); `Publish` 33.9 ns; `SendStream` (10 items) 542.3 ns.
 

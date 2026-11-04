@@ -1,6 +1,4 @@
 using System.Collections.Concurrent;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Pipelink.Behaviors;
@@ -15,11 +13,8 @@ namespace Pipelink.Implementation;
 public sealed class Pipelink : IPipelink
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ConcurrentDictionary<(Type RequestType, Type ResponseType), object> _sendPipelineCache = new();
-    private readonly ConcurrentDictionary<(Type RequestType, Type ResponseType), object> _behaviorListCache = new();
-
-    private static readonly MethodInfo SendPipelineMethod =
-        typeof(Pipelink).GetMethod(nameof(SendPipelineImpl), BindingFlags.NonPublic | BindingFlags.Instance)!;
+    private readonly ConcurrentDictionary<Type, object> _requestWrappers = new();
+    private readonly ConcurrentDictionary<(Type RequestType, Type ResponseType), object> _multiResponseWrappers = new();
 
     public Pipelink(IServiceProvider serviceProvider)
     {
@@ -32,70 +27,19 @@ public sealed class Pipelink : IPipelink
         ArgumentNullException.ThrowIfNull(request);
 
         var requestType = request.GetType();
-        var responseType = typeof(TResponse);
-        var key = (requestType, responseType);
-
-        var invoker = (SendPipelineInvoker<TResponse>)_sendPipelineCache.GetOrAdd(
-            key,
-            static (k, self) => CreateSendPipelineInvoker<TResponse>(self, k.RequestType),
-            this);
-
-        return invoker(this, request, cancellationToken);
-    }
-
-    private static SendPipelineInvoker<TResponse> CreateSendPipelineInvoker<TResponse>(
-        Pipelink pipelink,
-        Type requestType)
-    {
-        var pipelinkParam = Expression.Parameter(typeof(Pipelink), "pipelink");
-        var requestParam = Expression.Parameter(typeof(object), "request");
-        var cancellationTokenParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
-
-        var pipelineMethod = SendPipelineMethod.MakeGenericMethod(requestType, typeof(TResponse));
-        var requestCast = Expression.Convert(requestParam, requestType);
-        var call = Expression.Call(pipelinkParam, pipelineMethod, requestCast, cancellationTokenParam);
-
-        var lambda = Expression.Lambda<SendPipelineInvoker<TResponse>>(
-            call,
-            pipelinkParam,
-            requestParam,
-            cancellationTokenParam);
-
-        return lambda.Compile();
-    }
-
-    private async Task<TResponse> SendPipelineImpl<TRequest, TResponse>(
-        TRequest request,
-        CancellationToken cancellationToken)
-        where TRequest : IRequest<TResponse>
-    {
-        var key = (typeof(TRequest), typeof(TResponse));
-        var behaviors = (IPipelineBehavior<TRequest, TResponse>[])_behaviorListCache.GetOrAdd(
-            key,
-            static (k, sp) => sp.GetServices<IPipelineBehavior<TRequest, TResponse>>().ToArray(),
-            _serviceProvider);
-
-        RequestHandlerDelegate<TResponse> next = () =>
-            InvokeHandlerAsync<TRequest, TResponse>(request, cancellationToken);
-
-        for (var i = behaviors.Length - 1; i >= 0; i--)
+        if (_requestWrappers.GetOrAdd(requestType, static t => CreateWrapper<TResponse>(t)) is not RequestWrapper<TResponse> wrapper)
         {
-            var behavior = behaviors[i];
-            var inner = next;
-            next = () => behavior.Handle(request, cancellationToken, inner);
+            // A request type implementing IRequest<T> for several T needs a response-specific wrapper.
+            wrapper = (RequestWrapper<TResponse>)_multiResponseWrappers.GetOrAdd(
+                (requestType, typeof(TResponse)),
+                static k => CreateWrapper<TResponse>(k.RequestType));
         }
 
-        return await next().ConfigureAwait(false);
+        return wrapper.Handle(request, _serviceProvider, cancellationToken);
     }
 
-    private async Task<TResponse> InvokeHandlerAsync<TRequest, TResponse>(
-        TRequest request,
-        CancellationToken cancellationToken)
-        where TRequest : IRequest<TResponse>
-    {
-        var handler = _serviceProvider.GetRequiredService<IRequestHandler<TRequest, TResponse>>();
-        return await handler.Handle(request, cancellationToken).ConfigureAwait(false);
-    }
+    private static object CreateWrapper<TResponse>(Type requestType) =>
+        Activator.CreateInstance(typeof(RequestWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!;
 
     /// <inheritdoc />
     public async IAsyncEnumerable<TResponse> SendStream<TResponse>(
@@ -127,8 +71,47 @@ public sealed class Pipelink : IPipelink
         }
     }
 
-    private delegate Task<TResponse> SendPipelineInvoker<TResponse>(
-        Pipelink pipelink,
-        object request,
-        CancellationToken cancellationToken);
+    private abstract class RequestWrapper<TResponse>
+    {
+        public abstract Task<TResponse> Handle(object request, IServiceProvider serviceProvider, CancellationToken cancellationToken);
+    }
+
+    private sealed class RequestWrapper<TRequest, TResponse> : RequestWrapper<TResponse>
+        where TRequest : IRequest<TResponse>
+    {
+        private const int UNKNOWN = 0;
+        private const int NO_BEHAVIORS = 1;
+        private const int HAS_BEHAVIORS = 2;
+
+        // Only the presence of behaviors is cached; instances are resolved per call to honor their DI lifetimes.
+        private int _behaviorState = UNKNOWN;
+
+        public override Task<TResponse> Handle(object request, IServiceProvider serviceProvider, CancellationToken cancellationToken)
+        {
+            var typedRequest = (TRequest)request;
+
+            if (Volatile.Read(ref _behaviorState) == NO_BEHAVIORS)
+            {
+                return serviceProvider.GetRequiredService<IRequestHandler<TRequest, TResponse>>()
+                    .Handle(typedRequest, cancellationToken);
+            }
+
+            var resolved = serviceProvider.GetServices<IPipelineBehavior<TRequest, TResponse>>();
+            var behaviors = resolved as IPipelineBehavior<TRequest, TResponse>[] ?? resolved.ToArray();
+            Volatile.Write(ref _behaviorState, behaviors.Length == 0 ? NO_BEHAVIORS : HAS_BEHAVIORS);
+
+            RequestHandlerDelegate<TResponse> next = () =>
+                serviceProvider.GetRequiredService<IRequestHandler<TRequest, TResponse>>()
+                    .Handle(typedRequest, cancellationToken);
+
+            for (var i = behaviors.Length - 1; i >= 0; i--)
+            {
+                var behavior = behaviors[i];
+                var inner = next;
+                next = () => behavior.Handle(typedRequest, cancellationToken, inner);
+            }
+
+            return next();
+        }
+    }
 }

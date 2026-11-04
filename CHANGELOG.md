@@ -12,6 +12,8 @@ All notable changes to this project are documented in this file.
 ### Fixed
 
 - **`Send` now executes the `IPipelineBehavior` pipeline** before the request handler (registration order = outermost-first). Previously behaviors were registered in DI but bypassed.
+- **Pipeline behaviors** are resolved from DI on every `Send`, so transient/scoped behavior lifetimes are honored (an interim build cached behavior instances).
+- **`Send` fast path:** one cached generic wrapper per request type replaces compiled expression trees; with no behaviors registered the handler is called directly (~37 ns / 208 B vs MediatR 12.5 ~62–74 ns / 272 B on Apple M3).
 - **Stream handlers** are resolved from DI on each call (no stale singleton handler in compiled delegates).
 - **`Publish`** uses typed `INotificationHandler<T>` dispatch instead of reflection-only invocation.
 - Removed duplicate **`StreamUserQueryHandler`** in the sample API.
@@ -28,7 +30,7 @@ All notable changes to this project are documented in this file.
 
 ### Notes / follow-ups
 
-- Re-benchmark against MediatR on .NET 10; README numbers are from the 1.x era.
+- `Send` no longer wraps the call in an extra `async` method, so DI resolution errors (for example a missing handler) are thrown synchronously from `Send` instead of through the returned task. `await mediator.Send(...)` callers see no difference.
 - Transitive **`Microsoft.OpenApi` 2.0.0** advisory (NU1903) may still appear until upstream packages ship patched versions — track and bump when available.
 - **`IStreamPipelineBehavior`** is still not wired into `SendStream` (future enhancement).
 - **`CachingBehavior`** uses an in-process static dictionary — not suitable for multi-instance deployments without review.

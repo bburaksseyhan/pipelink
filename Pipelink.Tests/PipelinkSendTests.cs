@@ -57,7 +57,69 @@ public class PipelinkSendTests
         await Assert.ThrowsAsync<ArgumentNullException>(() => mediator.Send((NullGuardRequest)null!));
     }
 
+    [Fact]
+    public async Task Send_ShouldResolveTransientBehaviorPerCall_WhenBehaviorRegisteredAsTransient()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<Pipelink.Implementation.Pipelink>();
+        services.AddSingleton<OrderTracker>();
+        services.AddTransient<IRequestHandler<OrderProbeRequest, string>, OrderProbeHandler>();
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(InstanceCountingBehavior<,>));
+
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<Pipelink.Implementation.Pipelink>();
+        var tracker = provider.GetRequiredService<OrderTracker>();
+
+        await mediator.Send(new OrderProbeRequest());
+        await mediator.Send(new OrderProbeRequest());
+
+        Assert.Equal(2, tracker.Steps.Count(s => s.StartsWith("instance:")));
+        Assert.Equal(2, tracker.Steps.Where(s => s.StartsWith("instance:")).Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Send_ShouldDispatchByResponseType_WhenRequestImplementsMultipleResponses()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<Pipelink.Implementation.Pipelink>();
+        services.AddTransient<IRequestHandler<DualRequest, string>, DualHandler>();
+        services.AddTransient<IRequestHandler<DualRequest, int>, DualHandler>();
+
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<Pipelink.Implementation.Pipelink>();
+        var request = new DualRequest();
+
+        Assert.Equal("text", await mediator.Send<string>(request));
+        Assert.Equal(42, await mediator.Send<int>(request));
+    }
+
     public record PingRequest(string Message) : IRequest<string>;
+
+    public record DualRequest : IRequest<string>, IRequest<int>;
+
+    private sealed class DualHandler : IRequestHandler<DualRequest, string>, IRequestHandler<DualRequest, int>
+    {
+        Task<string> IRequestHandler<DualRequest, string>.Handle(DualRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult("text");
+
+        Task<int> IRequestHandler<DualRequest, int>.Handle(DualRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(42);
+    }
+
+    private sealed class InstanceCountingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+        where TRequest : IRequest<TResponse>
+    {
+        private readonly OrderTracker _tracker;
+        private readonly Guid _id = Guid.NewGuid();
+
+        public InstanceCountingBehavior(OrderTracker tracker) => _tracker = tracker;
+
+        public Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+        {
+            _tracker.Steps.Add($"instance:{_id}");
+            return next();
+        }
+    }
 
     private sealed class PingHandler : IRequestHandler<PingRequest, string>
     {
