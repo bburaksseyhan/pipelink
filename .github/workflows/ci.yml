@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, development, production]
+    branches: [main, development, production, "cursor/**"]
   pull_request:
     branches: [main, development, production]
 
@@ -18,10 +18,19 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore pipelink.sln
+        run: dotnet restore Orient.MediatR.slnx
 
       - name: Build
-        run: dotnet build pipelink.sln --no-restore -c Release
+        run: dotnet build Orient.MediatR.slnx --no-restore -c Release
 
       - name: Test
-        run: dotnet test pipelink.sln --no-build -c Release --verbosity normal
+        run: dotnet test Orient.MediatR.slnx --no-build -c Release --verbosity normal
+
+      - name: Pack
+        run: dotnet pack src/Orient.MediatR/Orient.MediatR.csproj --no-build -c Release -o ./artifacts/packages
+
+      - name: Validate package
+        run: bash ./build/validate-packages.sh ./artifacts/packages
+
+      - name: Verify package in fresh Console, Worker and Web API projects
+        run: bash ./build/verify-consumer.sh ./artifacts/packages

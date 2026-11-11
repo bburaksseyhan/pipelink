@@ -1,0 +1,21 @@
+@SampleApi_HostAddress = http://localhost:5249
+
+### Get a user by id (IMediator.Send)
+GET {{SampleApi_HostAddress}}/user/1
+Accept: application/json
+
+### Stream users (IMediator.SendStream)
+GET {{SampleApi_HostAddress}}/users/stream?count=5
+Accept: application/json
+
+### Login (IMediator.Send with a command)
+POST {{SampleApi_HostAddress}}/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "secret"
+}
+
+### Publish user-created notification (IMediator.Publish, fans out to 2 handlers)
+POST {{SampleApi_HostAddress}}/users/42/created?email=user42@example.com

@@ -1,6 +1,32 @@
 # Changelog
 
-## [2.0.0]
+## [Orient.MediatR 1.0.0]
+
+First release under the Orient family. Pipelink 2.0.0 is the previous version of this package; the dispatch code, behavior and performance are unchanged.
+
+### Breaking
+
+- Package ID `Pipelink` → **`Orient.MediatR`**.
+- Namespaces `Pipelink.*` → `Orient.MediatR.*` (`Interfaces`, `Handlers`, `Behaviors`, `Extensions`, `Implementation`).
+- `IPipelink` → `IMediator`; `Pipelink.Implementation.Pipelink` → `Orient.MediatR.Implementation.Mediator`.
+- `AddPipelink(...)` → `AddOrientMediatR(...)`; `PipelinkConfiguration` → `OrientMediatRConfiguration`; `PipelinkCollectionExtensions` → `OrientMediatRServiceCollectionExtensions`.
+- The obsolete `AddPipelinkHandlersAndBehaviors()` is removed.
+
+### Migration bridges
+
+- `[Obsolete] IPipelink : IMediator`, registered in DI and resolving to the same mediator.
+- `[Obsolete] AddPipelink(...)` forwards to `AddOrientMediatR(...)`.
+- Both are removed in the next major version.
+
+### Changed
+
+- Orient package icon (`assets/icon.png`), Orient metadata (Authors, Product, Copyright, tags, release notes).
+- SourceLink, deterministic CI builds and a `.snupkg` symbol package.
+- XML documentation file shipped in the package.
+- Repository layout follows Orient: `src/`, `tests/`, `samples/`, `benchmarks/`, `build/`, `Orient.MediatR.slnx`, `Directory.Build.props/targets` and central package versions in `Directory.Packages.props`.
+- `build/validate-packages.sh` checks the packed `.nupkg`; `build/verify-consumer.sh` installs it from a local folder into fresh Console, Worker and Web API projects and runs them. The publish workflow runs both before pushing.
+
+## [Pipelink 2.0.0]
 
 ### Breaking
 
@@ -19,6 +45,6 @@
 - `global.json` pinning SDK 10.0.102; CI and publish workflows read it.
 - The publish workflow fails when the pushed `v*` tag does not match `<Version>` in `Pipelink/Pipelink.csproj`.
 
-## [1.2.0] and earlier
+## [Pipelink 1.2.0] and earlier
 
 See the git history.

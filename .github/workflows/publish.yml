@@ -1,10 +1,11 @@
 name: Publish to NuGet
 
-# Release by pushing a tag that matches <Version> in Pipelink/Pipelink.csproj, e.g. v2.0.0.
+# Release by pushing a tag that matches <Version> in Directory.Build.props, e.g. v1.0.0.
+# The nuget.org Trusted Publishing policy is bound to this repository and to this file name (publish.yml).
 on:
   push:
     tags:
-      - "v*"
+      - "v[0-9]*"
   workflow_dispatch:
 
 jobs:
@@ -25,25 +26,31 @@ jobs:
       - name: Verify tag matches package version
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          project_version=$(dotnet msbuild Pipelink/Pipelink.csproj -getProperty:Version)
+          project_version=$(dotnet msbuild src/Orient.MediatR/Orient.MediatR.csproj -getProperty:Version)
           tag_version="${GITHUB_REF_NAME#v}"
           echo "Project version: $project_version, tag version: $tag_version"
           if [ "$project_version" != "$tag_version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match <Version>$project_version</Version> in Pipelink/Pipelink.csproj"
+            echo "::error::Tag $GITHUB_REF_NAME does not match <Version>$project_version</Version> in Directory.Build.props"
             exit 1
           fi
 
       - name: Restore
-        run: dotnet restore pipelink.sln
+        run: dotnet restore Orient.MediatR.slnx
 
       - name: Build
-        run: dotnet build pipelink.sln --no-restore -c Release
+        run: dotnet build Orient.MediatR.slnx --no-restore -c Release
 
       - name: Test
-        run: dotnet test pipelink.sln --no-build -c Release
+        run: dotnet test Orient.MediatR.slnx --no-build -c Release
 
       - name: Pack
-        run: dotnet pack Pipelink/Pipelink.csproj --no-build -c Release -o ./nupkg
+        run: dotnet pack src/Orient.MediatR/Orient.MediatR.csproj --no-build -c Release -o ./artifacts/packages
+
+      - name: Validate package
+        run: bash ./build/validate-packages.sh ./artifacts/packages
+
+      - name: Verify package in fresh Console, Worker and Web API projects
+        run: bash ./build/verify-consumer.sh ./artifacts/packages
 
       # Exchanges the GitHub OIDC token for a short-lived NuGet API key.
       # Requires a Trusted Publishing policy on nuget.org pointing at this repo and workflow file.
@@ -55,7 +62,7 @@ jobs:
 
       - name: Push to NuGet.org
         run: >
-          dotnet nuget push ./nupkg/*.nupkg
+          dotnet nuget push "./artifacts/packages/*.nupkg"
           --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
           --source https://api.nuget.org/v3/index.json
           --skip-duplicate

@@ -1,0 +1,8 @@
+<Project>
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+    <None Include="$(MSBuildProjectDirectory)\README.package.md" Pack="true" PackagePath="\README.md" Link="README.package.md" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" Link="LICENSE" />
+    <None Include="$(MSBuildThisFileDirectory)assets\icon.png" Pack="true" PackagePath="\" Link="icon.png" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Authors>bburaksseyhan</Authors>
+    <Company>bburaksseyhan</Company>
+    <Product>Orient</Product>
+    <Copyright>Copyright (c) 2026 bburaksseyhan</Copyright>
+    <Version>1.0.0</Version>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/bburaksseyhan/pipelink</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/bburaksseyhan/pipelink</PackageProjectUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Orient.MediatR 1.0.0: Pipelink renamed into the Orient family. IPipelink is now IMediator and AddPipelink is now AddOrientMediatR; obsolete bridges keep Pipelink 2.x code compiling. Package icon is the Orient cyan rounded square.</PackageReleaseNotes>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <IsPackable Condition="$(MSBuildProjectName.EndsWith('Tests')) OR $(MSBuildProjectName.EndsWith('Benchmarks')) OR $(MSBuildProjectName.Contains('.Sample'))">false</IsPackable>
+    <PackageIcon Condition="'$(IsPackable)' != 'false'">icon.png</PackageIcon>
+  </PropertyGroup>
+</Project>
