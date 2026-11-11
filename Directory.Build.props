@@ -22,7 +22,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <DebugType>portable</DebugType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Orient.MediatR 1.0.0: Pipelink renamed into the Orient family. IPipelink is now IMediator and AddPipelink is now AddOrientMediatR; obsolete bridges keep Pipelink 2.x code compiling. Package icon is the Orient cyan rounded square.</PackageReleaseNotes>
+    <PackageReleaseNotes>Orient.Pipelink 1.0.0: Pipelink 2.0.0 joins the Orient family under a new package ID. Type names are unchanged; namespaces move from Pipelink.* to Orient.Pipelink.*. Orient package icon, SourceLink and symbol package.</PackageReleaseNotes>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <IsPackable Condition="$(MSBuildProjectName.EndsWith('Tests')) OR $(MSBuildProjectName.EndsWith('Benchmarks')) OR $(MSBuildProjectName.Contains('.Sample'))">false</IsPackable>
     <PackageIcon Condition="'$(IsPackable)' != 'false'">icon.png</PackageIcon>

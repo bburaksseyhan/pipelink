@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Installs Orient.MediatR from a local package folder into fresh Console, Worker and Web API projects and runs them.
+# Installs Orient.Pipelink from a local package folder into fresh Console, Worker and Web API projects and runs them.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 package_dir="$(cd "${1:-$root/artifacts/packages}" && pwd)"
-version="${2:-$(dotnet msbuild "$root/src/Orient.MediatR/Orient.MediatR.csproj" -getProperty:Version)}"
+version="${2:-$(dotnet msbuild "$root/src/Orient.Pipelink/Orient.Pipelink.csproj" -getProperty:Version)}"
 port="${VERIFY_CONSUMER_PORT:-5187}"
 work="$(mktemp -d)"
 export NUGET_PACKAGES="$work/packages"
@@ -19,7 +19,7 @@ cat > "$work/nuget.config" << EOF
   </packageSources>
   <packageSourceMapping>
     <packageSource key="local">
-      <package pattern="Orient.MediatR" />
+      <package pattern="Orient.Pipelink" />
     </packageSource>
     <packageSource key="nuget.org">
       <package pattern="*" />
@@ -32,44 +32,41 @@ new_consumer() {
   local template="$1" name="$2"
   dotnet new "$template" -n "$name" -o "$work/$name" -f net10.0 --no-restore > /dev/null
   cp "$work/nuget.config" "$work/$name/nuget.config"
-  dotnet add "$work/$name/$name.csproj" package Orient.MediatR --version "$version" > /dev/null
+  dotnet add "$work/$name/$name.csproj" package Orient.Pipelink --version "$version" > /dev/null
 }
 
-# Console: Send, Publish, SendStream, an opt-in behavior and the obsolete Pipelink bridge.
+# Console: Send, Publish, SendStream and an opt-in behavior.
 new_consumer console ConsoleConsumer
 dotnet add "$work/ConsoleConsumer/ConsoleConsumer.csproj" package Microsoft.Extensions.Hosting --version 10.0.0 > /dev/null
 cat > "$work/ConsoleConsumer/Program.cs" << 'EOF'
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Orient.MediatR.Behaviors;
-using Orient.MediatR.Extensions;
-using Orient.MediatR.Handlers;
-using Orient.MediatR.Interfaces;
+using Orient.Pipelink.Behaviors;
+using Orient.Pipelink.Extensions;
+using Orient.Pipelink.Handlers;
+using Orient.Pipelink.Interfaces;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddSingleton<List<string>>();
-builder.Services.AddOrientMediatR(cfg =>
+builder.Services.AddPipelink(cfg =>
 {
     cfg.RegisterServicesFromAssemblyContaining<Ping>();
     cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
 });
 using var host = builder.Build();
 using var scope = host.Services.CreateScope();
-var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+var pipelink = scope.ServiceProvider.GetRequiredService<IPipelink>();
 
-var pong = await mediator.Send(new Ping("orient"));
-await mediator.Publish(new Pinged(pong));
+var pong = await pipelink.Send(new Ping("orient"));
+await pipelink.Publish(new Pinged(pong));
 var streamed = new List<int>();
-await foreach (var n in mediator.SendStream(new Count(3))) streamed.Add(n);
-#pragma warning disable CS0618
-var legacy = await scope.ServiceProvider.GetRequiredService<IPipelink>().Send(new Ping("pipelink"));
-#pragma warning restore CS0618
+await foreach (var n in pipelink.SendStream(new Count(3))) streamed.Add(n);
 
 var log = scope.ServiceProvider.GetRequiredService<List<string>>();
-if (pong != "pong:orient" || legacy != "pong:pipelink" || log.Count != 1 || string.Join(',', streamed) != "0,1,2")
-    throw new InvalidOperationException($"unexpected results: {pong} {legacy} {log.Count} {string.Join(',', streamed)}");
-Console.WriteLine($"console ok: {pong}, {legacy}, published={log.Count}, stream={string.Join(',', streamed)}");
+if (pong != "pong:orient" || log.Count != 1 || string.Join(',', streamed) != "0,1,2")
+    throw new InvalidOperationException($"unexpected results: {pong} {log.Count} {string.Join(',', streamed)}");
+Console.WriteLine($"console ok: {pong}, published={log.Count}, stream={string.Join(',', streamed)}");
 
 public record Ping(string Name) : IRequest<string>;
 public class PingHandler : IRequestHandler<Ping, string>
@@ -92,16 +89,16 @@ public class CountHandler : IStreamRequestHandler<Count, int>
 EOF
 dotnet run --project "$work/ConsoleConsumer/ConsoleConsumer.csproj" -c Release
 
-# Worker: a BackgroundService that creates a scope per unit of work and sends through the mediator.
+# Worker: a BackgroundService that creates a scope per unit of work and sends through the pipelink.
 new_consumer worker WorkerConsumer
 cat > "$work/WorkerConsumer/Program.cs" << 'EOF'
-using Orient.MediatR.Extensions;
-using Orient.MediatR.Handlers;
-using Orient.MediatR.Interfaces;
+using Orient.Pipelink.Extensions;
+using Orient.Pipelink.Handlers;
+using Orient.Pipelink.Interfaces;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddScoped<ScopeId>();
-builder.Services.AddOrientMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Tick>());
+builder.Services.AddPipelink(cfg => cfg.RegisterServicesFromAssemblyContaining<Tick>());
 builder.Services.AddHostedService<TickWorker>();
 await builder.Build().RunAsync();
 
@@ -119,7 +116,7 @@ public class TickWorker(IServiceScopeFactory scopes, IHostApplicationLifetime li
         for (var i = 0; i < 3; i++)
         {
             using var scope = scopes.CreateScope();
-            ids.Add(await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new Tick(i), stoppingToken));
+            ids.Add(await scope.ServiceProvider.GetRequiredService<IPipelink>().Send(new Tick(i), stoppingToken));
         }
         if (ids.Count != 3) throw new InvalidOperationException("scoped handler dependency leaked across scopes");
         Console.WriteLine($"worker ok: {ids.Count} ticks in {ids.Count} scopes");
@@ -132,15 +129,15 @@ dotnet run --project "$work/WorkerConsumer/WorkerConsumer.csproj" -c Release
 # Web API: minimal endpoint with a scoped dependency, called over HTTP.
 new_consumer web ApiConsumer
 cat > "$work/ApiConsumer/Program.cs" << 'EOF'
-using Orient.MediatR.Extensions;
-using Orient.MediatR.Handlers;
-using Orient.MediatR.Interfaces;
+using Orient.Pipelink.Extensions;
+using Orient.Pipelink.Handlers;
+using Orient.Pipelink.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<Greeter>();
-builder.Services.AddOrientMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Greet>());
+builder.Services.AddPipelink(cfg => cfg.RegisterServicesFromAssemblyContaining<Greet>());
 var app = builder.Build();
-app.MapGet("/greet/{name}", (string name, IMediator mediator, CancellationToken ct) => mediator.Send(new Greet(name), ct));
+app.MapGet("/greet/{name}", (string name, IPipelink pipelink, CancellationToken ct) => pipelink.Send(new Greet(name), ct));
 app.Run();
 
 public class Greeter { public string Hello(string name) => $"Hello, {name}"; }

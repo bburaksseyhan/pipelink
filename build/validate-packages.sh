@@ -3,14 +3,14 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 package_dir="${1:-$root/artifacts/packages}"
-version="${2:-$(dotnet msbuild "$root/src/Orient.MediatR/Orient.MediatR.csproj" -getProperty:Version)}"
+version="${2:-$(dotnet msbuild "$root/src/Orient.Pipelink/Orient.Pipelink.csproj" -getProperty:Version)}"
 
 python3 - "$package_dir" "$version" << 'PY'
 import sys, zipfile
 from pathlib import Path
 
 package_dir, version = Path(sys.argv[1]), sys.argv[2]
-package_id = "Orient.MediatR"
+package_id = "Orient.Pipelink"
 nupkg = package_dir / f"{package_id}.{version}.nupkg"
 snupkg = package_dir / f"{package_id}.{version}.snupkg"
 

@@ -18,16 +18,16 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore Orient.MediatR.slnx
+        run: dotnet restore Orient.Pipelink.slnx
 
       - name: Build
-        run: dotnet build Orient.MediatR.slnx --no-restore -c Release
+        run: dotnet build Orient.Pipelink.slnx --no-restore -c Release
 
       - name: Test
-        run: dotnet test Orient.MediatR.slnx --no-build -c Release --verbosity normal
+        run: dotnet test Orient.Pipelink.slnx --no-build -c Release --verbosity normal
 
       - name: Pack
-        run: dotnet pack src/Orient.MediatR/Orient.MediatR.csproj --no-build -c Release -o ./artifacts/packages
+        run: dotnet pack src/Orient.Pipelink/Orient.Pipelink.csproj --no-build -c Release -o ./artifacts/packages
 
       - name: Validate package
         run: bash ./build/validate-packages.sh ./artifacts/packages

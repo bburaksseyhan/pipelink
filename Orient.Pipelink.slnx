@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Orient.Pipelink.Benchmarks/Orient.Pipelink.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Orient.Pipelink.SampleApi/Orient.Pipelink.SampleApi.csproj" />
+    <Project Path="samples/Orient.Pipelink.SampleConsole/Orient.Pipelink.SampleConsole.csproj" />
+    <Project Path="samples/Orient.Pipelink.SampleWorker/Orient.Pipelink.SampleWorker.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Orient.Pipelink/Orient.Pipelink.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Orient.Pipelink.IntegrationTests/Orient.Pipelink.IntegrationTests.csproj" />
+    <Project Path="tests/Orient.Pipelink.Tests/Orient.Pipelink.Tests.csproj" />
+  </Folder>
+</Solution>
